@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const provinceData = {
   "Jawa Barat": ["Bandung", "Bekasi", "Bogor"],
@@ -13,16 +13,44 @@ const Register = () => {
   const [province, setProvince] = useState("");
   const [regency, setRegency] = useState("");
   const [agree, setAgree] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleProvinceChange = (e) => {
     setProvince(e.target.value);
-    setRegency(""); // Reset regency
+    setRegency("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log({ role, whatsapp, province, regency, agree });
-    // Lakukan pengiriman data di sini
+
+    if (!whatsapp || !province || !regency || !agree) {
+      alert("Semua field harus diisi dan kamu harus menyetujui syaratnya.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:5000/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role, whatsapp, province, regency }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Registrasi berhasil!");
+        navigate("/login"); // redirect ke login
+      } else {
+        alert(data.message || "Registrasi gagal");
+      }
+    } catch (err) {
+      alert("Terjadi kesalahan saat registrasi.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const dummyLogo = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRGh5WFH8TOIfRKxUrIgJZoDCs1yvQ4hIcppw&s';
@@ -116,12 +144,11 @@ const Register = () => {
 
           {/* Submit */}
           <button
-            onPress={() => window.location.href = '/'}
             type="submit"
+            disabled={!agree || loading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded disabled:opacity-50"
-            disabled={!agree}
           >
-            Sign up
+            {loading ? "Processing..." : "Sign up"}
           </button>
 
           {/* Navigation Links */}
