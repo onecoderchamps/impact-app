@@ -47,11 +47,7 @@ const OTPVerification = () => {
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('role', idRole);
       localStorage.setItem('id', id);
-      if (idRole === 'KOL') {
-        navigate('/AppKOL/dashboard');
-      } else {
-        alert('Role tidak dikenali. Hubungi admin.');
-      }
+      navigate('/appimpact');
     } catch (error) {
       console.error('OTP verification failed:', error);
       alert('Kode OTP salah atau kedaluwarsa.');

@@ -14,6 +14,11 @@ import Wallet from "./screen/kol/pages/Wallet";
 import Contract from "./screen/kol/pages/Contract";
 import Balance from "./screen/kol/pages/Balance";
 import Invoice from "./screen/kol/pages/Invoice";
+import DashboardBrand from "./screen/kol/pages2/Dashboard";
+import CreateCampaign from "./screen/kol/pages2/CreateCampaign";
+import DaftarCampaign from "./screen/kol/pages2/DaftarCampaign";
+import PermintaanEndorse from "./screen/kol/pages2/PermintaanEndorse";
+import PencarianInfluencer from "./screen/kol/pages2/CariInfluencer";
 
 
 function App() {
@@ -26,7 +31,7 @@ function App() {
         <Route path="/Verify" element={<OTPVerification />} />
 
         {/* Nested route for AppKOL */}
-        <Route path="/AppKOL" element={<MainLayout />}>
+        <Route path="/appimpact" element={<MainLayout />}>
           <Route path="dashboard" index element={<DashboardKOL />} /> {/* default /AppKOL */}
           <Route path="campaigns" element={<Campaigns />} />
           <Route path="rate-card" element={<RateCard />} />
@@ -34,6 +39,13 @@ function App() {
           <Route path="contract" element={<Contract />} />
           <Route path="balance" element={<Balance />} />
           <Route path="invoice" element={<Invoice />} />
+
+          <Route path="dashboardBrand" element={<DashboardBrand />} />
+          <Route path="createCampaign" element={<CreateCampaign />} />
+          <Route path="daftarCampaign" element={<DaftarCampaign />} />
+          <Route path="permintaanEndorse" element={<PermintaanEndorse />} />
+          <Route path="PencarianInfluencer" element={<PencarianInfluencer />} />
+
         </Route>
         <Route path="*" element={<NotFound />} />
 
