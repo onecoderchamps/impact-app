@@ -70,6 +70,7 @@ function EditAccountModal({ onClose }) {
         categories: formData.categories.join(", "),
       });
       onClose();
+      window.location.reload();
     } catch (err) {
       setError("Failed to update profile.");
     } finally {

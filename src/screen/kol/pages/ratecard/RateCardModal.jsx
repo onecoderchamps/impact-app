@@ -23,7 +23,7 @@ const RateCardEditor = ({ onSave }) => {
   };
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow-md w-full ">
+    <div className="bg-white p-4 rounded-xl shadow-md w-full border">
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
         <select

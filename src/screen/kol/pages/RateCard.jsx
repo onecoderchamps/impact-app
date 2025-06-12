@@ -190,12 +190,12 @@ export default function RateCardPage() {
         ))}
       </div>
       {modal === "top" && <TopContentModal onClose={() => setModal(null)} />}
-      {modal === "account" && <EditAccountModal onClose={() => setModal(null)} user={user} />}
+      {modal === "account" && <EditAccountModal onClose={() => {setModal(null)}} user={user} />}
 
       {syncModalVisible && (
         <SyncStatusModal
           status={syncStatus}
-          onClose={() => setSyncModalVisible(false)}
+          onClose={() => {setSyncModalVisible(false); window.location.reload()}}
           isFinished={syncDone}
         />
       )}
