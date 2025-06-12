@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getData,postData } from "../../../../api/service";
+import { getData, postData } from "../../../../api/service";
 
 function EditAccountModal({ onClose }) {
   const categoryOptions = [
@@ -18,7 +18,7 @@ function EditAccountModal({ onClose }) {
     facebook: "",
     linkedin: "",
     bio: "",
-    fullName:"",
+    fullName: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -65,9 +65,9 @@ function EditAccountModal({ onClose }) {
     setError("");
 
     try {
-      await postData("UpdateProfileSosmed", {
+      await postData("auth/UpdateProfileSosmed", {
         ...formData,
-        categories: formData.categories.join(", ")
+        categories: formData.categories.join(", "),
       });
       onClose();
     } catch (err) {
@@ -80,7 +80,6 @@ function EditAccountModal({ onClose }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center overflow-y-auto">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-3xl relative">
-        {/* Close Button */}
         <button
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl"
           onClick={onClose}
@@ -88,7 +87,6 @@ function EditAccountModal({ onClose }) {
           ✕
         </button>
 
-        {/* Title */}
         <h2 className="text-2xl font-bold mb-6 text-gray-800">Edit Social Media Information</h2>
 
         <form onSubmit={handleSubmit}>
@@ -98,28 +96,29 @@ function EditAccountModal({ onClose }) {
             </div>
           )}
 
-          {/* Grid 2 columns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">Biograpi</label>
-              <input
-                type="text"
-                name="image"
-                className="w-full px-4 py-2 border rounded-lg"
-                value={formData.bio}
-                onChange={handleChange}
-              />
-            </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Nama Lengkap</label>
               <input
                 type="text"
-                name="image"
+                name="fullName"
                 className="w-full px-4 py-2 border rounded-lg"
                 value={formData.fullName}
                 onChange={handleChange}
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Biografi</label>
+              <textarea
+                name="bio"
+                rows={4}
+                className="w-full px-4 py-2 border rounded-lg"
+                value={formData.bio}
+                onChange={handleChange}
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Image Profile URL</label>
               <input
@@ -176,7 +175,7 @@ function EditAccountModal({ onClose }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">Url LinkedIn Profile</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">URL LinkedIn Profile</label>
               <input
                 type="text"
                 name="linkedin"
@@ -187,7 +186,6 @@ function EditAccountModal({ onClose }) {
             </div>
           </div>
 
-          {/* Category Checklist */}
           <div className="mt-6">
             <label className="block text-sm font-medium mb-2 text-gray-700">Kategori Influencer</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -205,7 +203,6 @@ function EditAccountModal({ onClose }) {
             </div>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200 disabled:opacity-50"

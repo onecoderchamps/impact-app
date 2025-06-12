@@ -6,7 +6,7 @@ const API_URL = 'http://localhost:5214/api/v1/';
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 10000, // 10 detik
+  timeout: 50000, // 10 detik
 });
 
 // Ambil token dari localStorage
