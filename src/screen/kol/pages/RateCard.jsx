@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import DraggableCard from "./ratecard/DraggableCard";
 import TopContentModal from "./ratecard/TopContentModal";
 import EditAccountModal from "./ratecard/EditModa";
 import SyncStatusModal from "./ratecard/SyncStatusModal";
@@ -64,7 +63,6 @@ export default function RateCardPage() {
         const response = await getData("Scraper");
         if (response) {
           setUser(response.user);
-          console.log(response.data)
           setData(response.data);
         }
       } catch (error) {
@@ -192,11 +190,6 @@ export default function RateCardPage() {
 
       <h2 className="text-xl font-bold mt-8 mb-4">Info Visible in Your Public Rate Card</h2>
       <RateCardEditor onSave={handleSave} />
-      <div className="space-y-4">
-        {items.map((item) => (
-          <DraggableCard key={item.id} title={item.title} onClick={() => setModal(item.id)} />
-        ))}
-      </div>
       {modal === "top" && <TopContentModal onClose={() => setModal(null)} />}
       {modal === "account" && <EditAccountModal onClose={() => {setModal(null)}} user={user} />}
 

@@ -60,14 +60,14 @@ const OTPVerification = () => {
     }
   };
 
-  const dummyLogo = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRGh5WFH8TOIfRKxUrIgJZoDCs1yvQ4hIcppw&s';
+  const dummyImage = 'https://beres-backend-609517395039.asia-southeast2.run.app/api/v1/file/review/6849aee0211fd6926c9a4b81';
 
   return (
     <div className="flex min-h-screen">
       {/* Left */}
       <div className="w-1/2 bg-blue-700 text-white flex flex-col justify-center items-center p-10">
         <div className="max-w-md text-center">
-          <img src={dummyLogo} alt="Mockup" className="mb-6 w-3/4 mx-auto" />
+          <img src={dummyImage} alt="Mockup" className="mb-6 w-3/4 mx-auto" />
           <h1 className="text-3xl font-bold mb-4 text-center">OTP Verification</h1>
           <p className="text-center">Please enter the OTP sent to your WhatsApp to continue.</p>
         </div>
