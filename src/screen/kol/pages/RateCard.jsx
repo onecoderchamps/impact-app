@@ -4,6 +4,7 @@ import TopContentModal from "./ratecard/TopContentModal";
 import EditAccountModal from "./ratecard/EditModa";
 import SyncStatusModal from "./ratecard/SyncStatusModal";
 import { getData, postData } from "../../../api/service";
+import { Pencil } from 'lucide-react'; // Icon edit
 import RateCardEditor from "./ratecard/RateCardModal";
 
 const initialItems = [
@@ -144,30 +145,37 @@ export default function RateCardPage() {
 
       {user && (
         <div
-          className="bg-indigo-100 p-4 rounded-lg cursor-pointer hover:shadow-md"
-          onClick={handleProfileClick}
-        >
-          <div className="flex items-center space-x-4">
-            <img
-              src={user.image}
-              alt="Profile"
-              className="w-16 h-16 rounded-full object-cover"
-            />
-            <div>
-              <div className="flex items-center space-x-2">
-                <h2 className="text-lg font-semibold">{user.fullName}</h2>
-                {user.isVerification && (
-                  <span className="text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full text-xs font-medium flex items-center">
-                    ✔️ Verified
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-gray-600">{user.categories || "N/A"}</p>
-              <p className="text-sm text-gray-600">{user.email}</p>
-              <p className="text-sm text-gray-600">{user.phone}</p>
+        className="relative bg-indigo-100 p-4 rounded-lg"
+      >
+        <div className="absolute top-2 right-2">
+          <Pencil
+            className="w-5 h-5 text-gray-500 hover:text-blue-600"
+            onClick={handleProfileClick}
+          />
+        </div>
+
+        <div className="flex items-center space-x-4">
+          <img
+            src={user.image}
+            alt="Profile"
+            className="w-16 h-16 rounded-full object-cover"
+          />
+          <div>
+            <div className="flex items-center space-x-2">
+              <h2 className="text-lg font-semibold">{user.fullName}</h2>
+              {user.isVerification && (
+                <span className="text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full text-xs font-medium flex items-center">
+                  ✔️ Verified
+                </span>
+              )}
             </div>
+            <p className="text-sm text-gray-600">{user.categories || "N/A"}</p>
+            <p className="text-sm text-gray-600">{user.email}</p>
+            <p className="text-sm text-gray-600">{user.phone}</p>
           </div>
         </div>
+      </div>
+
       )}
 
       <button
