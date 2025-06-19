@@ -34,7 +34,7 @@ const Login = () => {
       navigate('/verify', { state: { phoneNumber: formattedPhone } });
     } catch (error) {
       console.log(error)
-      alert('Login gagal. Pastikan nomor valid atau coba lagi nanti.');
+      alert('Login gagal. '+error);
     } finally {
       setIsLoading(false);
     }
