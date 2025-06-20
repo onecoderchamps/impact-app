@@ -36,12 +36,8 @@ const menuItemsBrand = [
   },
   {
     name: 'Influencer',
-    path: '/appimpact/wallet',
+    path: '/appimpact/PencarianInfluencer',
     icon: '💼',
-    children: [
-      { name: 'Permintaan', path: '/appimpact/permintaanEndorse' },
-      { name: 'Pencarian', path: '/appimpact/PencarianInfluencer' },
-    ],
   },
   {
     name: 'Tagihan',
