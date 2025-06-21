@@ -116,6 +116,7 @@ export default function JobForm() {
 
     try {
       await postData("Campaign", formData);
+      window.location.href = "/appimpact/daftarCampaign"; // Redirect to campaigns page
       alert("Berhasil mengirim campaign!");
       // Optionally reset form fields here
     } catch (err) {
@@ -124,12 +125,11 @@ export default function JobForm() {
   };
 
   return (
-    <main className="ml-64 mt-16 p-8 bg-gray-100 min-h-screen">
+    <main className="ml-64 mt-20 p-8 bg-gray-100 min-h-screen">
       <form
         onSubmit={handleSubmit}
         className="max-w-full mx-auto bg-white p-8 rounded-xl shadow-lg space-y-8"
       >
-        <h2 className="text-3xl font-bold text-gray-800 mb-6 border-b pb-4">Detail Pekerjaan</h2>
 
         {/* Tanggal */}
         <div>

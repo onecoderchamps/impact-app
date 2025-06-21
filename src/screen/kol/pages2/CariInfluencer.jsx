@@ -437,8 +437,7 @@ const KolList = () => {
   };
 
   return (
-    <main className="ml-64 mt-16 p-8 bg-gray-100 min-h-screen">
-      <h1 className="text-4xl font-extrabold text-gray-900 mb-8 text-center">Daftar Key Opinion Leaders (KOL)</h1>
+    <main className="ml-64 mt-20 p-8 bg-gray-100 min-h-screen">
 
       {/* Input Pencarian */}
       <div className="mb-8 flex justify-center">

@@ -411,9 +411,8 @@ export default function CampaignList() {
   }
 
   return (
-    <main className="ml-64 mt-16 p-8 bg-gray-100 min-h-screen">
+    <main className="ml-64 mt-20 p-8 bg-gray-100 min-h-screen">
       <div className="max-w-full mx-auto">
-        <h2 className="text-3xl font-bold text-gray-800 mb-8 border-b pb-4">Daftar Campaign</h2> {/* Added heading */}
         {campaigns.length === 0 ? (
           <p className="text-center text-gray-600 text-lg">Belum ada campaign tersedia.</p>
         ) : (

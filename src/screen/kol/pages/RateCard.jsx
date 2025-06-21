@@ -138,8 +138,7 @@ export default function RateCardPage() {
   };
 
   return (
-    <div className="ml-64 mt-16 p-6 bg-gray-50 min-h-screen space-y-6">
-      <div className="text-sm text-gray-500">Campaigns &gt; Rate Card</div>
+    <div className="ml-64 mt-20 p-6 bg-gray-50 min-h-screen space-y-6">
 
       {user && (
         <div
