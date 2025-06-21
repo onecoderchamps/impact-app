@@ -1,92 +1,120 @@
-import React, { useEffect, useState } from 'react';
-import { getData, postData } from '../../../api/service'; // Assuming getData is for fetching, postData for actions
+import React, { useEffect, useState, useCallback } from 'react';
+import { getData, putData } from '../../../api/service'; // Make sure putData is imported
 
-// --- New Component: CampaignDetailModal ---
-const CampaignDetailModal = ({ campaign, applicants: initialApplicants, onClose, onApplicantStatusChange }) => {
+// --- Helper function: mapApplicantStatus ---
+// Maps API status values (null, true, false) to user-friendly strings.
+const mapApplicantStatus = (apiStatus) => {
+  if (apiStatus === null) {
+    return 'Pending';
+  } else if (apiStatus === true) {
+    return 'Approved';
+  } else if (apiStatus === false) {
+    return 'Rejected';
+  }
+  return 'Unknown'; // Fallback for unexpected values
+};
+
+// --- Helper function: formatDate ---
+// Formats date strings into a readable Indonesian format.
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  try {
+    return new Date(dateString).toLocaleDateString('id-ID', options);
+  } catch (e) {
+    console.error("Invalid date string:", dateString, e);
+    return 'Invalid Date';
+  }
+};
+
+// --- Helper function: formatCurrency ---
+// Formats numbers into Indonesian Rupiah currency.
+const formatCurrency = (amount) => {
+  if (typeof amount !== 'number') return 'Rp0';
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+// --- CampaignDetailModal Component ---
+// Added onRefreshApplicants prop
+const CampaignDetailModal = ({ campaign, initialApplicants, onClose, onApplicantStatusChange, onRefreshApplicants }) => {
   if (!campaign) return null;
 
-  const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'approved', or 'rejected'
-  const [modalApplicants, setModalApplicants] = useState(initialApplicants); // State to manage applicants within the modal
+  const [activeTab, setActiveTab] = useState('pending');
+  const [modalApplicants, setModalApplicants] = useState(initialApplicants);
+  const [loadingAction, setLoadingAction] = useState(false);
+  const [actionError, setActionError] = useState(null);
 
   useEffect(() => {
     setModalApplicants(initialApplicants);
-    // Set default tab to 'pending' if there are pending applicants, otherwise 'approved'
-    if (initialApplicants.some(app => app.status === 'Pending')) {
+    // Determine initial active tab based on the presence of pending applicants
+    if (initialApplicants.some(app => mapApplicantStatus(app.status) === 'Pending')) {
       setActiveTab('pending');
-    } else if (initialApplicants.some(app => app.status === 'Approved')) {
+    } else if (initialApplicants.some(app => mapApplicantStatus(app.status) === 'Approved')) {
       setActiveTab('approved');
     } else {
-      setActiveTab('rejected'); // Fallback if no pending or approved
+      setActiveTab('rejected');
     }
   }, [initialApplicants]);
 
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('id-ID', options);
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const handleApprove = async (applicantId) => {
+  // Function to handle approving or rejecting an applicant
+  // newStatusApiValue will be true for Approved, false for Rejected
+  const handleStatusChange = async (applicantRegisterMemberId, newStatusApiValue) => {
+    setLoadingAction(true);
+    setActionError(null);
     try {
-      // Replace with your actual API call to approve the applicant
-      // Example: await postData(`/applicants/${applicantId}/approve`, { campaignId: campaign.id });
-      console.log(`Approving applicant ${applicantId} for campaign ${campaign.id}`);
-      alert(`Pelamar ${applicantId} disetujui untuk campaign ${campaign.namaProyek}`);
-      // Update local state and propagate to parent
-      setModalApplicants(prevApplicants =>
-        prevApplicants.map(app =>
-          app.id === applicantId ? { ...app, status: 'Approved' } : app
-        )
-      );
-      if (onApplicantStatusChange) {
-        onApplicantStatusChange(applicantId, 'Approved');
+      const payload = {
+        status: newStatusApiValue, // This will be true or false
+        idCampaign: campaign.id, // Include campaign ID for context
+        idUser: modalApplicants.find(app => app.id === applicantRegisterMemberId)?.idUser // Get the user ID from the applicants list
+      };
+
+      const response = await putData("Campaign/MemberCampaign", payload);
+
+      if (response.code === 200) {
+        // Update local state: find the applicant and only update `status`
+        const updatedApplicants = modalApplicants.map(app =>
+          app.id === applicantRegisterMemberId
+            ? { ...app, status: newStatusApiValue } // Update only status
+            : app
+        );
+        setModalApplicants(updatedApplicants);
+
+        // Notify the parent component about the change, passing the mapped status string
+        if (onApplicantStatusChange) {
+          onApplicantStatusChange(applicantRegisterMemberId, mapApplicantStatus(newStatusApiValue));
+        }
+
+        alert(`Pelamar berhasil ${newStatusApiValue ? 'disetujui' : 'ditolak'}.`);
+
+        // --- NEW: Refresh applicants list from API after successful update ---
+        if (onRefreshApplicants) {
+          await onRefreshApplicants();
+        }
+        // --- END NEW ---
+
+      } else {
+        setActionError(response.Error || 'Gagal memperbarui status pelamar.');
+        alert(`Gagal memperbarui status pelamar: ${response.Error || 'Terjadi kesalahan.'}`);
       }
+
     } catch (error) {
-      console.error('Error approving applicant:', error);
-      alert('Gagal menyetujui pelamar.');
+      console.error('Error updating applicant status:', error);
+      setActionError('Terjadi kesalahan saat berkomunikasi dengan server.');
+      alert('Gagal memperbarui status pelamar. Silakan coba lagi.');
+    } finally {
+      setLoadingAction(false);
     }
   };
 
-  const handleReject = async (applicantId) => {
-    try {
-      // Replace with your actual API call to reject the applicant
-      // Example: await postData(`/applicants/${applicantId}/reject`, { campaignId: campaign.id });
-      console.log(`Rejecting applicant ${applicantId} for campaign ${campaign.id}`);
-      alert(`Pelamar ${applicantId} ditolak untuk campaign ${campaign.namaProyek}`);
-      // Update local state and propagate to parent
-      setModalApplicants(prevApplicants =>
-        prevApplicants.map(app =>
-          app.id === applicantId ? { ...app, status: 'Rejected' } : app
-        )
-      );
-      if (onApplicantStatusChange) {
-        onApplicantStatusChange(applicantId, 'Rejected');
-      }
-    } catch (error) {
-      console.error('Error rejecting applicant:', error);
-      alert('Gagal menolak pelamar.');
-    }
-  };
-
+  // Filter applicants based on the mapped status
   const filteredApplicants = modalApplicants.filter(applicant => {
-    if (activeTab === 'pending') {
-      return applicant.status === 'Pending';
-    } else if (activeTab === 'approved') {
-      return applicant.status === 'Approved';
-    } else if (activeTab === 'rejected') {
-      return applicant.status === 'Rejected';
-    }
-    return true; // Fallback, though tabs should cover all states
+    return mapApplicantStatus(applicant.status) === activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
   });
-
 
   return (
     <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4 z-50 animate-fade-in">
@@ -176,7 +204,8 @@ const CampaignDetailModal = ({ campaign, applicants: initialApplicants, onClose,
 
               <div className="pt-4 mt-6 border-t border-gray-200">
                 <p className="font-semibold text-gray-800 mb-2">Status Campaign:</p>
-                {campaign.isVerification ? (
+                {/* campaign.status is used here, ensure it's mapped correctly for display */}
+                {campaign.status ? (
                   <span className="bg-green-100 text-green-700 text-lg px-4 py-2 rounded-full font-bold shadow-sm">
                     Terverifikasi
                   </span>
@@ -205,7 +234,7 @@ const CampaignDetailModal = ({ campaign, applicants: initialApplicants, onClose,
                     : 'text-gray-500 hover:text-gray-700 border-b-4 border-transparent'
                 }`}
               >
-                Need Approval ({modalApplicants.filter(a => a.status === 'Pending').length})
+                Need Approval ({modalApplicants.filter(a => mapApplicantStatus(a.status) === 'Pending').length})
               </button>
               <button
                 onClick={() => setActiveTab('approved')}
@@ -215,7 +244,7 @@ const CampaignDetailModal = ({ campaign, applicants: initialApplicants, onClose,
                     : 'text-gray-500 hover:text-gray-700 border-b-4 border-transparent'
                 }`}
               >
-                Approved ({modalApplicants.filter(a => a.status === 'Approved').length})
+                Approved ({modalApplicants.filter(a => mapApplicantStatus(a.status) === 'Approved').length})
               </button>
               <button
                 onClick={() => setActiveTab('rejected')}
@@ -225,11 +254,15 @@ const CampaignDetailModal = ({ campaign, applicants: initialApplicants, onClose,
                     : 'text-gray-500 hover:text-gray-700 border-b-4 border-transparent'
                 }`}
               >
-                Rejected ({modalApplicants.filter(a => a.status === 'Rejected').length})
+                Rejected ({modalApplicants.filter(a => mapApplicantStatus(a.status) === 'Rejected').length})
               </button>
             </div>
 
-            {filteredApplicants.length === 0 ? (
+            {loadingAction ? (
+              <p className="text-gray-600 text-center mt-8 text-lg bg-gray-50 p-6 rounded-lg">Memperbarui status pelamar...</p>
+            ) : actionError ? (
+              <p className="text-red-600 text-center mt-8 text-lg bg-red-50 p-6 rounded-lg">Error: {actionError}</p>
+            ) : filteredApplicants.length === 0 ? (
               <p className="text-gray-600 text-center mt-8 text-lg bg-gray-50 p-6 rounded-lg">
                 {activeTab === 'pending' && 'Tidak ada pelamar menunggu persetujuan.'}
                 {activeTab === 'approved' && 'Tidak ada pelamar yang disetujui.'}
@@ -241,38 +274,41 @@ const CampaignDetailModal = ({ campaign, applicants: initialApplicants, onClose,
                   <div key={applicant.id} className="bg-white p-5 rounded-xl shadow-md flex items-center justify-between border border-gray-200 hover:shadow-lg transition-shadow duration-200">
                     <div className="flex items-center">
                       <img
-                        src={applicant.profilePic || `https://ui-avatars.com/api/?name=${applicant.name.split(' ').join('+')}&background=random&color=fff&size=64`}
-                        alt={applicant.name}
+                        src={applicant.profilePic || `https://ui-avatars.com/api/?name=${applicant.name?.split(' ').join('+') || '?'}&background=random&color=fff&size=64`}
+                        alt={applicant.name || 'Pelamar'}
                         className="w-16 h-16 rounded-full object-cover mr-5 border-2 border-blue-300 shadow-sm"
                       />
                       <div>
-                        <p className="font-bold text-xl text-gray-900">{applicant.name}</p>
-                        <p className="text-md text-gray-600 mt-1">{applicant.socialMedia}</p>
+                        <p className="font-bold text-xl text-gray-900">{applicant.name || 'Nama Pelamar'}</p>
+                        <p className="text-md text-gray-600 mt-1">{applicant.socialMedia || 'Social Media N/A'}</p>
                         <p className={`text-sm font-semibold mt-2 px-3 py-1 rounded-full inline-block ${
-                          applicant.status === 'Approved' ? 'bg-green-100 text-green-700' :
-                          applicant.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                          mapApplicantStatus(applicant.status) === 'Approved' ? 'bg-green-100 text-green-700' :
+                          mapApplicantStatus(applicant.status) === 'Rejected' ? 'bg-red-100 text-red-700' :
                           'bg-yellow-100 text-yellow-700'
                         }`}>
-                          Status: {applicant.status}
+                          Status: {mapApplicantStatus(applicant.status)}
                         </p>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-3">
-                      <button
-                        onClick={() => handleApprove(applicant.id)}
-                        className="bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={applicant.status === 'Approved' || applicant.status === 'Rejected'}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleReject(applicant.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={applicant.status === 'Approved' || applicant.status === 'Rejected'}
-                      >
-                        Reject
-                      </button>
-                    </div>
+                    {/* Action buttons only for 'Pending' tab */}
+                    {activeTab === 'pending' && (
+                        <div className="flex flex-col gap-3">
+                          <button
+                            onClick={() => handleStatusChange(applicant.id, 'Approved')} // Send true for Approved
+                            className="bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={loadingAction}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(applicant.id, 'Rejected')} // Send false for Rejected
+                            className="bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={loadingAction}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -316,83 +352,111 @@ const CampaignDetailModal = ({ campaign, applicants: initialApplicants, onClose,
     </div>
   );
 };
-// --- End New Component: CampaignDetailModal ---
 
-
+// --- CampaignList Component ---
 export default function CampaignList() {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [applicants, setApplicants] = useState([]); // State for applicants specific to the selected campaign
+  const [applicantsForModal, setApplicantsForModal] = useState([]);
+  const [loadingApplicants, setLoadingApplicants] = useState(false);
+  const [applicantFetchError, setApplicantFetchError] = useState(null);
 
-  // Mock applicant data (replace with actual API fetch)
-  const mockApplicants = [
-    { id: 'app1', name: 'Budi Santoso', socialMedia: '@budisantoso_official', profilePic: 'https://i.pravatar.cc/150?img=1', status: 'Pending' },
-    { id: 'app2', name: 'Citra Dewi', socialMedia: '@citradewi_vlog', profilePic: 'https://i.pravatar.cc/150?img=2', status: 'Pending' },
-    { id: 'app3', name: 'Dion Permana', socialMedia: '@dion_creator', profilePic: 'https://i.pravatar.cc/150?img=3', status: 'Approved' },
-    { id: 'app4', name: 'Endahwati', socialMedia: '@endahwati_beauty', profilePic: 'https://i.pravatar.cc/150?img=4', status: 'Pending' },
-    { id: 'app5', name: 'Fajar Kurniawan', socialMedia: '@fajar_kreatif', profilePic: 'https://i.pravatar.cc/150?img=5', status: 'Rejected' },
-    { id: 'app6', name: 'Gita Lestari', socialMedia: '@gita_glam', profilePic: 'https://i.pravatar.cc/150?img=6', status: 'Approved' },
-  ];
-
-  useEffect(() => {
-    const fetchCampaigns = async () => {
-      try {
-        setLoading(true);
-        // Assuming 'getData' is defined in 'service.js' for GET requests
-        const response = await getData("Campaign"); // Replace with your actual endpoint
-        if (response.code === 200 && response.data) {
-          setCampaigns(response.data);
-        } else {
-          setError(response.Error || 'Failed to fetch campaigns.');
-        }
-      } catch (err) {
-        setError(err.message || 'An error occurred while fetching campaigns.');
-      } finally {
-        setLoading(false);
+  const fetchCampaigns = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await getData("Campaign");
+      if (response.code === 200 && response.data) {
+        setCampaigns(response.data);
+      } else {
+        setError(response.Error || 'Failed to fetch campaigns.');
       }
-    };
-
-    fetchCampaigns();
+    } catch (err) {
+      console.error('Error fetching campaigns:', err);
+      setError(err.message || 'An error occurred while fetching campaigns.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const openCampaignDetails = (campaign) => {
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
+
+  // This function is now responsible for fetching applicants for the currently selected campaign
+  const fetchApplicantsForCampaign = useCallback(async (campaignId) => {
+    if (!campaignId) return; // Ensure a campaignId is provided
+
+    setLoadingApplicants(true);
+    setApplicantFetchError(null);
+    try {
+      const response = await getData(`Campaign/registerMember/${campaignId}`);
+      if (response.code === 200 && response.data) {
+        // Map the raw API data to the structure expected by the modal
+        const mappedApplicants = response.data.map(app => ({
+          id: app.id, // This is the `registerMember` ID (for update operations)
+          idUser: app.idUser,
+          idCampaign: app.idCampaign,
+          status: app.status, // Use the 'status' field directly from the API for the boolean/null value
+          name: app.fullName, // Use actual fullName
+          socialMedia: app.email, // Use actual email or relevant social media field
+          profilePic: app.image, // Use actual image
+        }));
+        setApplicantsForModal(mappedApplicants);
+      } else {
+        setApplicantFetchError(response.Error || 'Failed to fetch applicants.');
+      }
+    } catch (err) {
+      console.error('Error fetching applicants:', err);
+      setApplicantFetchError(err.message || 'An error occurred while fetching applicants.');
+    } finally {
+      setLoadingApplicants(false);
+    }
+  }, []);
+
+  const openCampaignDetails = async (campaign) => {
     setSelectedCampaign(campaign);
-    // In a real app, you'd fetch applicants for this specific campaign ID
-    // For now, we'll use mock data
-    setApplicants(mockApplicants); // Replace with: await getData(`Campaign/${campaign.id}/applicants`);
+    // Fetch applicants using the campaign.id
+    await fetchApplicantsForCampaign(campaign.id);
     setIsModalOpen(true);
   };
 
   const closeCampaignDetails = () => {
     setIsModalOpen(false);
     setSelectedCampaign(null);
-    setApplicants([]);
+    setApplicantsForModal([]); // Clear applicants when closing
+    setApplicantFetchError(null);
   };
 
-  const handleApplicantStatusChange = (applicantId, newStatus) => {
-    setApplicants(prevApplicants =>
+  // This is now redundant since modal will trigger a full refresh.
+  // Keeping it for now but might be removed if only full refresh is desired.
+  const handleApplicantStatusChange = useCallback((applicantId, newStatus) => {
+    setApplicantsForModal(prevApplicants =>
       prevApplicants.map(app =>
-        app.id === applicantId ? { ...app, status: newStatus } : app
+        app.id === applicantId
+          ? {
+              ...app,
+              status: // This conversion from string to boolean/null should be done in the modal
+                      // if the modal is passing the string 'Approved'/'Rejected'/'Pending'
+                      // However, the modal now passes the boolean 'true'/'false'
+                newStatus === true ? true :
+                newStatus === false ? false :
+                null // For 'Pending'
+            }
+          : app
       )
     );
-  };
+  }, []);
 
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('id-ID', options);
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  // --- NEW: Function to trigger applicant list reload from API ---
+  const refreshModalApplicants = useCallback(async () => {
+    if (selectedCampaign?.id) {
+      await fetchApplicantsForCampaign(selectedCampaign.id);
+    }
+  }, [selectedCampaign, fetchApplicantsForCampaign]);
+  // --- END NEW ---
 
   if (loading) {
     return (
@@ -452,7 +516,7 @@ export default function CampaignList() {
                   <div className="border-t border-gray-100 pt-4 mt-4">
                     <div className="flex justify-between items-center text-sm text-gray-500">
                       <span>Dipromosikan: <span className="font-medium text-gray-700">{campaign.tipeProyek}</span></span>
-                      {campaign.isVerification ? (
+                      {campaign.status ? (
                         <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">Terverifikasi</span>
                       ) : (
                         <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full">Menunggu Verifikasi</span>
@@ -466,13 +530,36 @@ export default function CampaignList() {
         )}
       </div>
 
-      {isModalOpen && (
+      {isModalOpen && selectedCampaign && (
         <CampaignDetailModal
           campaign={selectedCampaign}
-          applicants={applicants}
+          initialApplicants={applicantsForModal}
           onClose={closeCampaignDetails}
-          onApplicantStatusChange={handleApplicantStatusChange}
+          onApplicantStatusChange={(applicantId, newStatusApiValue) => handleApplicantStatusChange(applicantId, newStatusApiValue)}
+          onRefreshApplicants={refreshModalApplicants} 
         />
+      )}
+      {/* Loading state for fetching applicants in modal */}
+      {isModalOpen && loadingApplicants && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl flex items-center space-x-3">
+            <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p className="text-lg text-gray-700">Memuat data pelamar...</p>
+          </div>
+        </div>
+      )}
+      {/* Error state for fetching applicants in modal */}
+      {isModalOpen && !loadingApplicants && applicantFetchError && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-red-50 p-8 rounded-lg shadow-xl text-red-700 border border-red-200">
+            <p className="text-lg font-semibold mb-2">Gagal memuat pelamar!</p>
+            <p>{applicantFetchError}</p>
+            <button onClick={closeCampaignDetails} className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">Tutup</button>
+          </div>
+        </div>
       )}
     </main>
   );

@@ -87,18 +87,13 @@ const Register = () => {
           <div className="absolute inset-0 bg-pattern opacity-10"></div>
           
           <div className="z-10 text-center">
-            <h1 className="text-5xl font-extrabold mb-4 leading-tight drop-shadow-md">
+            <h1 className="text-2xl font-extrabold mb-4 leading-tight drop-shadow-md">
               Bergabunglah dengan <br />
               <span className="text-yellow-300">Impact.ID</span> Sekarang!
             </h1>
             <p className="text-lg mb-8 opacity-90 leading-relaxed max-w-sm mx-auto">
               Daftar untuk mendapatkan akses penuh ke platform terpadu kami dan mulai maksimalkan kolaborasi *influencer* Anda.
             </p>
-            <img 
-              src={brandIllustration} 
-              alt="Register Illustration" 
-              className="mt-10 max-w-[80%] h-auto mx-auto rounded-xl shadow-lg transform translate-y-2" // Sedikit transisi untuk visual
-            />
           </div>
         </div>
 

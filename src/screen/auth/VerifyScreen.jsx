@@ -134,18 +134,13 @@ const OTPVerification = () => {
           <div className="absolute inset-0 bg-pattern opacity-10"></div>
           
           <div className="z-10 text-center">
-            <h1 className="text-5xl font-extrabold mb-4 leading-tight drop-shadow-md">
+            <h1 className="text-2xl font-extrabold mb-4 leading-tight drop-shadow-md">
               Verifikasi Akun Anda di <br />
               <span className="text-yellow-300">Impact.ID</span>
             </h1>
             <p className="text-lg mb-8 opacity-90 leading-relaxed max-w-sm mx-auto">
               Langkah terakhir menuju kolaborasi berdampak! Masukkan kode OTP yang kami kirimkan ke WhatsApp Anda.
             </p>
-            <img 
-              src={brandIllustration} 
-              alt="OTP Verification Illustration" 
-              className="mt-10 max-w-[80%] h-auto mx-auto rounded-xl shadow-lg transform translate-y-2" 
-            />
           </div>
         </div>
 

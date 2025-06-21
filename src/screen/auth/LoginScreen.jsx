@@ -54,18 +54,13 @@ const Login = () => {
           <div className="absolute inset-0 bg-pattern opacity-10"></div>
           
           <div className="z-10 text-center">
-            <h1 className="text-5xl font-extrabold mb-4 leading-tight drop-shadow-md">
+            <h1 className="text-2xl font-extrabold mb-4 leading-tight drop-shadow-md">
               Selamat Datang Kembali di <br />
               <span className="text-yellow-300">Impact.ID</span>
             </h1>
             <p className="text-lg mb-8 opacity-90 leading-relaxed max-w-sm mx-auto">
               Masuk untuk melanjutkan perjalanan kolaborasi Anda dan ciptakan dampak yang lebih besar bersama para KOL terbaik.
             </p>
-            <img 
-              src={brandIllustration} 
-              alt="Welcome Illustration" 
-              className="mt-10 max-w-[80%] h-auto mx-auto rounded-xl shadow-lg transform translate-y-2" // Sedikit transisi untuk visual
-            />
           </div>
         </div>
 
