@@ -157,7 +157,7 @@ const CampaignDetailModal = ({ campaign, initialApplicants, onClose, onApplicant
     setActionError(null);
     try {
       const payload = {
-        status: newStatusApiValue, // Ini akan bernilai true atau false
+        status: newStatusApiValue ? "Approved" : "Rejected", // Ini akan bernilai true atau false
         idCampaign: campaign.id, // Sertakan ID campaign untuk konteks
         idUser: modalApplicants.find(app => app.id === applicantRegisterMemberId)?.idUser // Dapatkan ID user dari daftar pelamar
       };
