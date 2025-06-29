@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { getData, putData } from '../../../api/service'; // Make sure putData is imported
+import { getData, putData, postData } from '../../../api/service'; // Pastikan putData dan postData diimpor
 
 // --- Helper function: mapApplicantStatus ---
-// Maps API status values (null, true, false) to user-friendly strings.
+// Memetakan nilai status API (null, true, false) ke string yang mudah dibaca pengguna.
 const mapApplicantStatus = (apiStatus) => {
   if (apiStatus === null) {
     return 'Pending';
@@ -11,11 +11,11 @@ const mapApplicantStatus = (apiStatus) => {
   } else if (apiStatus === false) {
     return 'Rejected';
   }
-  return 'Unknown'; // Fallback for unexpected values
+  return 'Unknown'; // Fallback untuk nilai yang tidak terduga
 };
 
 // --- Helper function: formatDate ---
-// Formats date strings into a readable Indonesian format.
+// Memformat string tanggal ke format Indonesia yang mudah dibaca.
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -28,7 +28,7 @@ const formatDate = (dateString) => {
 };
 
 // --- Helper function: formatCurrency ---
-// Formats numbers into Indonesian Rupiah currency.
+// Memformat angka ke mata uang Rupiah Indonesia.
 const formatCurrency = (amount) => {
   if (typeof amount !== 'number') return 'Rp0';
   return new Intl.NumberFormat('id-ID', {
@@ -39,8 +39,7 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-// --- CampaignDetailModal Component ---
-// Added onRefreshApplicants prop
+// --- Komponen CampaignDetailModal ---
 const CampaignDetailModal = ({ campaign, initialApplicants, onClose, onApplicantStatusChange, onRefreshApplicants }) => {
   if (!campaign) return null;
 
@@ -51,7 +50,7 @@ const CampaignDetailModal = ({ campaign, initialApplicants, onClose, onApplicant
 
   useEffect(() => {
     setModalApplicants(initialApplicants);
-    // Determine initial active tab based on the presence of pending applicants
+    // Tentukan tab aktif awal berdasarkan keberadaan pelamar yang tertunda
     if (initialApplicants.some(app => mapApplicantStatus(app.status) === 'Pending')) {
       setActiveTab('pending');
     } else if (initialApplicants.some(app => mapApplicantStatus(app.status) === 'Approved')) {
@@ -61,45 +60,44 @@ const CampaignDetailModal = ({ campaign, initialApplicants, onClose, onApplicant
     }
   }, [initialApplicants]);
 
-  // Function to handle approving or rejecting an applicant
-  // newStatusApiValue will be true for Approved, false for Rejected
+  // Fungsi untuk menangani persetujuan atau penolakan pelamar
+  // newStatusApiValue akan bernilai true untuk Approved, false untuk Rejected
   const handleStatusChange = async (applicantRegisterMemberId, newStatusApiValue) => {
     setLoadingAction(true);
     setActionError(null);
     try {
       const payload = {
-        status: newStatusApiValue, // This will be true or false
-        idCampaign: campaign.id, // Include campaign ID for context
-        idUser: modalApplicants.find(app => app.id === applicantRegisterMemberId)?.idUser // Get the user ID from the applicants list
+        status: newStatusApiValue ? "Approved" : "Rejected", // Ini akan bernilai true atau false
+        idCampaign: campaign.id, // Sertakan ID campaign untuk konteks
+        idUser: modalApplicants.find(app => app.id === applicantRegisterMemberId)?.idUser // Dapatkan ID user dari daftar pelamar
       };
 
       const response = await putData("Campaign/MemberCampaign", payload);
 
       if (response.code === 200) {
-        // Update local state: find the applicant and only update `status`
+        // Perbarui state lokal: temukan pelamar dan perbarui hanya `status`
         const updatedApplicants = modalApplicants.map(app =>
           app.id === applicantRegisterMemberId
-            ? { ...app, status: newStatusApiValue } // Update only status
+            ? { ...app, status: newStatusApiValue } // Perbarui hanya status
             : app
         );
         setModalApplicants(updatedApplicants);
 
-        // Notify the parent component about the change, passing the mapped status string
+        // Beri tahu komponen induk tentang perubahan, berikan string status yang dipetakan
         if (onApplicantStatusChange) {
           onApplicantStatusChange(applicantRegisterMemberId, mapApplicantStatus(newStatusApiValue));
         }
 
         alert(`Pelamar berhasil ${newStatusApiValue ? 'disetujui' : 'ditolak'}.`);
 
-        // --- NEW: Refresh applicants list from API after successful update ---
+        // Refresh daftar pelamar dari API setelah pembaruan berhasil
         if (onRefreshApplicants) {
           await onRefreshApplicants();
         }
-        // --- END NEW ---
 
       } else {
-        setActionError(response.Error || 'Gagal memperbarui status pelamar.');
-        alert(`Gagal memperbarui status pelamar: ${response.Error || 'Terjadi kesalahan.'}`);
+        setActionError(response || 'Gagal memperbarui status pelamar.');
+        alert(`Gagal memperbarui status pelamar: ${response || 'Terjadi kesalahan.'}`);
       }
 
     } catch (error) {
@@ -111,15 +109,26 @@ const CampaignDetailModal = ({ campaign, initialApplicants, onClose, onApplicant
     }
   };
 
-  // Filter applicants based on the mapped status
+  // Filter pelamar berdasarkan status yang dipetakan
   const filteredApplicants = modalApplicants.filter(applicant => {
     return mapApplicantStatus(applicant.status) === activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
   });
 
+  const handleInvite = async () => {
+    try {
+      const idUser = localStorage.getItem('id'); // Ensure user ID is available
+      await postData('Campaign/register', { IdUser: idUser, IdCampaign: campaign.id });
+      onRefreshApplicants(); // Refresh daftar pelamar setelah mengundang KOL
+    } catch (error) {
+      console.error('Failed to invite KOL:', error);
+      alert(`Gagal mengundang KOL: ${error.message || error}`); // Display specific error message
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4 z-50 animate-fade-in">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl h-[95vh] flex flex-col relative overflow-hidden transform scale-95 animate-scale-in">
-        {/* Close Button */}
+        {/* Tombol Tutup */}
         <button
           onClick={onClose}
           className="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-4xl font-light leading-none z-10 transition-colors duration-200"
@@ -129,7 +138,7 @@ const CampaignDetailModal = ({ campaign, initialApplicants, onClose, onApplicant
         </button>
 
         <div className="p-10 flex-grow flex flex-col md:flex-row gap-10 overflow-hidden">
-          {/* Left Panel: Campaign Details */}
+          {/* Panel Kiri: Detail Campaign */}
           <div className="md:w-1/2 flex flex-col pr-6 border-r border-gray-100 overflow-y-auto custom-scrollbar">
             <h2 className="text-4xl font-extrabold text-gray-900 mb-8 border-b-4 border-blue-500 pb-4">
               {campaign.namaProyek}
@@ -204,8 +213,7 @@ const CampaignDetailModal = ({ campaign, initialApplicants, onClose, onApplicant
 
               <div className="pt-4 mt-6 border-t border-gray-200">
                 <p className="font-semibold text-gray-800 mb-2">Status Campaign:</p>
-                {/* campaign.status is used here, ensure it's mapped correctly for display */}
-                {campaign.status ? (
+                {campaign.isVerification ? (
                   <span className="bg-green-100 text-green-700 text-lg px-4 py-2 rounded-full font-bold shadow-sm">
                     Terverifikasi
                   </span>
@@ -218,105 +226,89 @@ const CampaignDetailModal = ({ campaign, initialApplicants, onClose, onApplicant
             </div>
           </div>
 
-          {/* Right Panel: Applicant List */}
+          {/* Panel Kanan: Daftar Pelamar */}
           <div className="md:w-1/2 flex flex-col pl-6 overflow-hidden">
-            <h2 className="text-4xl font-extrabold text-gray-900 mb-6 border-b-4 border-blue-500 pb-4">
-              Daftar Pelamar
-            </h2>
-
-            {/* Tabs for Pending, Approved, and Rejected */}
-            <div className="flex border-b border-gray-200 mb-6">
-              <button
-                onClick={() => setActiveTab('pending')}
-                className={`py-3 px-6 text-lg font-semibold transition-colors duration-200 ${
-                  activeTab === 'pending'
-                    ? 'border-b-4 border-blue-600 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700 border-b-4 border-transparent'
-                }`}
-              >
-                Need Approval ({modalApplicants.filter(a => mapApplicantStatus(a.status) === 'Pending').length})
-              </button>
-              <button
-                onClick={() => setActiveTab('approved')}
-                className={`py-3 px-6 text-lg font-semibold transition-colors duration-200 ${
-                  activeTab === 'approved'
-                    ? 'border-b-4 border-blue-600 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700 border-b-4 border-transparent'
-                }`}
-              >
-                Approved ({modalApplicants.filter(a => mapApplicantStatus(a.status) === 'Approved').length})
-              </button>
-              <button
-                onClick={() => setActiveTab('rejected')}
-                className={`py-3 px-6 text-lg font-semibold transition-colors duration-200 ${
-                  activeTab === 'rejected'
-                    ? 'border-b-4 border-blue-600 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700 border-b-4 border-transparent'
-                }`}
-              >
-                Rejected ({modalApplicants.filter(a => mapApplicantStatus(a.status) === 'Rejected').length})
-              </button>
-            </div>
 
             {loadingAction ? (
               <p className="text-gray-600 text-center mt-8 text-lg bg-gray-50 p-6 rounded-lg">Memperbarui status pelamar...</p>
             ) : actionError ? (
               <p className="text-red-600 text-center mt-8 text-lg bg-red-50 p-6 rounded-lg">Error: {actionError}</p>
             ) : filteredApplicants.length === 0 ? (
-              <p className="text-gray-600 text-center mt-8 text-lg bg-gray-50 p-6 rounded-lg">
-                {activeTab === 'pending' && 'Tidak ada pelamar menunggu persetujuan.'}
-                {activeTab === 'approved' && 'Tidak ada pelamar yang disetujui.'}
-                {activeTab === 'rejected' && 'Tidak ada pelamar yang ditolak.'}
-              </p>
+              <button
+                onClick={() => handleInvite()} // Kirim true untuk Approved
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-20"
+                disabled={loadingAction}
+              >
+                Daftar KOL untuk Campaign Ini
+              </button>
             ) : (
               <div className="space-y-6 overflow-y-auto custom-scrollbar flex-grow">
-                {filteredApplicants.map((applicant) => (
-                  <div key={applicant.id} className="bg-white p-5 rounded-xl shadow-md flex items-center justify-between border border-gray-200 hover:shadow-lg transition-shadow duration-200">
-                    <div className="flex items-center">
-                      <img
-                        src={applicant.profilePic || `https://ui-avatars.com/api/?name=${applicant.name?.split(' ').join('+') || '?'}&background=random&color=fff&size=64`}
-                        alt={applicant.name || 'Pelamar'}
-                        className="w-16 h-16 rounded-full object-cover mr-5 border-2 border-blue-300 shadow-sm"
-                      />
-                      <div>
-                        <p className="font-bold text-xl text-gray-900">{applicant.name || 'Nama Pelamar'}</p>
-                        <p className="text-md text-gray-600 mt-1">{applicant.socialMedia || 'Social Media N/A'}</p>
-                        <p className={`text-sm font-semibold mt-2 px-3 py-1 rounded-full inline-block ${
-                          mapApplicantStatus(applicant.status) === 'Approved' ? 'bg-green-100 text-green-700' :
-                          mapApplicantStatus(applicant.status) === 'Rejected' ? 'bg-red-100 text-red-700' :
-                          'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          Status: {mapApplicantStatus(applicant.status)}
-                        </p>
-                      </div>
-                    </div>
-                    {/* Action buttons only for 'Pending' tab */}
-                    {activeTab === 'pending' && (
-                        <div className="flex flex-col gap-3">
-                          <button
-                            onClick={() => handleStatusChange(applicant.id, 'Approved')} // Send true for Approved
-                            className="bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={loadingAction}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleStatusChange(applicant.id, 'Rejected')} // Send false for Rejected
-                            className="bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={loadingAction}
-                          >
-                            Reject
-                          </button>
+                {filteredApplicants.map((applicant) =>
+                  applicant.idUser == localStorage.getItem('id') ? (
+                    <div key={applicant.id} className="bg-white p-5 rounded-xl shadow-md flex items-center justify-between border border-gray-200 hover:shadow-lg transition-shadow duration-200">
+                      <div className="flex items-center">
+                        <img
+                          src={applicant.profilePic || `https://ui-avatars.com/api/?name=${applicant.name?.split(' ').join('+') || '?'}&background=random&color=fff&size=64`}
+                          alt={applicant.name || 'Pelamar'}
+                          className="w-16 h-16 rounded-full object-cover mr-5 border-2 border-blue-300 shadow-sm"
+                        />
+                        <div>
+                          <p className="font-bold text-xl text-gray-900">{applicant.name || 'Nama Pelamar'}</p>
+                          <p className="text-md text-gray-600 mt-1">{applicant.socialMedia || 'Social Media N/A'}</p>
+                          <p className={`text-sm font-semibold mt-2 px-3 py-1 rounded-full inline-block ${mapApplicantStatus(applicant.status) === 'Approved' ? 'bg-green-100 text-green-700' :
+                            mapApplicantStatus(applicant.status) === 'Rejected' ? 'bg-red-100 text-red-700' :
+                              'bg-yellow-100 text-yellow-700'
+                            }`}>
+                            Status: {mapApplicantStatus(applicant.status)}
+                          </p>
                         </div>
-                    )}
-                  </div>
-                ))}
+                      </div>
+                      {/* Tombol aksi hanya untuk tab 'Pending' */}
+                      {activeTab === 'pending' && (
+                        <div className="flex flex-col gap-3">
+                          {applicant.inviteBy === "User" ? (
+                            <div>
+                              <p className="text-sm font-semibold mt-2 px-3 py-1 rounded-full inline-block bg-blue-100 text-blue-700">
+                                Menunggu Persetujuan Brand
+                              </p>
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleStatusChange(applicant.id, true)} // Kirim true untuk Approved
+                                className="bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={loadingAction}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleStatusChange(applicant.id, false)} // Kirim false untuk Rejected
+                                className="bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={loadingAction}
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleInvite()} // Kirim true untuk Approved
+                      className="bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-20"
+                      disabled={loadingAction}
+                    >
+                      Daftar KOL untuk Campaign Ini
+                    </button>
+                  )
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
-      {/* Custom Scrollbar Styles (can be added to your main CSS file or a <style> tag in index.html) */}
+      {/* Gaya Scrollbar Kustom dan Animasi (dapat ditambahkan ke file CSS utama atau tag <style> di index.html) */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;
@@ -333,7 +325,7 @@ const CampaignDetailModal = ({ campaign, initialApplicants, onClose, onApplicant
           background: #a0aec0; /* gray-400 */
         }
 
-        /* Fade-in and Scale-in animations */
+        /* Animasi fade-in dan scale-in */
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -353,13 +345,14 @@ const CampaignDetailModal = ({ campaign, initialApplicants, onClose, onApplicant
   );
 };
 
-// --- CampaignList Component ---
+// --- Komponen CampaignList ---
 export default function CampaignList() {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false); // Diubah namanya untuk kejelasan
+  const [isActivationModalOpen, setIsActivationModalOpen] = useState(false); // State baru untuk modal aktivasi
   const [applicantsForModal, setApplicantsForModal] = useState([]);
   const [loadingApplicants, setLoadingApplicants] = useState(false);
   const [applicantFetchError, setApplicantFetchError] = useState(null);
@@ -371,11 +364,11 @@ export default function CampaignList() {
       if (response.code === 200 && response.data) {
         setCampaigns(response.data);
       } else {
-        setError(response.Error || 'Failed to fetch campaigns.');
+        setError(response.Error || 'Gagal mengambil campaign.');
       }
     } catch (err) {
       console.error('Error fetching campaigns:', err);
-      setError(err.message || 'An error occurred while fetching campaigns.');
+      setError(err.message || 'Terjadi kesalahan saat mengambil campaign.');
     } finally {
       setLoading(false);
     }
@@ -385,78 +378,96 @@ export default function CampaignList() {
     fetchCampaigns();
   }, [fetchCampaigns]);
 
-  // This function is now responsible for fetching applicants for the currently selected campaign
   const fetchApplicantsForCampaign = useCallback(async (campaignId) => {
-    if (!campaignId) return; // Ensure a campaignId is provided
+    if (!campaignId) return;
 
     setLoadingApplicants(true);
     setApplicantFetchError(null);
     try {
       const response = await getData(`Campaign/registerMember/${campaignId}`);
       if (response.code === 200 && response.data) {
-        // Map the raw API data to the structure expected by the modal
         const mappedApplicants = response.data.map(app => ({
-          id: app.id, // This is the `registerMember` ID (for update operations)
+          id: app.id,
           idUser: app.idUser,
           idCampaign: app.idCampaign,
-          status: app.status, // Use the 'status' field directly from the API for the boolean/null value
-          name: app.fullName, // Use actual fullName
-          socialMedia: app.email, // Use actual email or relevant social media field
-          profilePic: app.image, // Use actual image
+          status: app.status,
+          name: app.fullName,
+          socialMedia: app.email,
+          profilePic: app.image,
+          inviteBy: app.inviteBy,
         }));
         setApplicantsForModal(mappedApplicants);
       } else {
-        setApplicantFetchError(response.Error || 'Failed to fetch applicants.');
+        setApplicantFetchError(response.Error || 'Gagal mengambil pelamar.');
       }
     } catch (err) {
       console.error('Error fetching applicants:', err);
-      setApplicantFetchError(err.message || 'An error occurred while fetching applicants.');
+      setApplicantFetchError(err.message || 'Terjadi kesalahan saat mengambil pelamar.');
     } finally {
       setLoadingApplicants(false);
     }
   }, []);
 
+  // Handler untuk membuka Modal Detail Campaign
   const openCampaignDetails = async (campaign) => {
     setSelectedCampaign(campaign);
-    // Fetch applicants using the campaign.id
     await fetchApplicantsForCampaign(campaign.id);
-    setIsModalOpen(true);
+    setIsDetailModalOpen(true);
   };
 
+  // Handler untuk menutup Modal Detail Campaign
   const closeCampaignDetails = () => {
-    setIsModalOpen(false);
+    setIsDetailModalOpen(false);
     setSelectedCampaign(null);
-    setApplicantsForModal([]); // Clear applicants when closing
+    setApplicantsForModal([]);
     setApplicantFetchError(null);
   };
 
-  // This is now redundant since modal will trigger a full refresh.
-  // Keeping it for now but might be removed if only full refresh is desired.
-  const handleApplicantStatusChange = useCallback((applicantId, newStatus) => {
+  // Handler untuk membuka Modal Aktivasi
+  const openActivationModal = (campaign) => {
+    setSelectedCampaign(campaign);
+    setIsActivationModalOpen(true);
+  };
+
+  // Handler untuk menutup Modal Aktivasi
+  const closeActivationModal = () => {
+    setIsActivationModalOpen(false);
+    setSelectedCampaign(null); // Bersihkan campaign yang dipilih saat menutup
+  };
+
+  // Handler saat campaign berhasil diaktifkan
+  const handleCampaignActivation = (activatedCampaignId) => {
+    // Perbarui status verifikasi campaign secara optimis di daftar
+    setCampaigns(prevCampaigns =>
+      prevCampaigns.map(camp =>
+        camp.id === activatedCampaignId ? { ...camp, isVerification: true } : camp
+      )
+    );
+    // Opsional, ambil ulang semua campaign untuk memastikan konsistensi data
+    // fetchCampaigns();
+  };
+
+  // Ini sekarang berlebihan karena modal akan memicu refresh penuh.
+  // Tetap dipertahankan untuk saat ini, tetapi dapat dihapus jika hanya refresh penuh yang diinginkan.
+  const handleApplicantStatusChange = useCallback((applicantId, newStatusApiValue) => {
+    // Logika handler ini harus mencerminkan bagaimana Anda ingin memperbarui state lokal.
+    // Mengingat `onRefreshApplicants` sekarang digunakan, pembaruan lokal ini mungkin menjadi kurang penting
+    // jika Anda selalu mengandalkan pengambilan ulang penuh setelah perubahan status.
     setApplicantsForModal(prevApplicants =>
       prevApplicants.map(app =>
         app.id === applicantId
-          ? {
-              ...app,
-              status: // This conversion from string to boolean/null should be done in the modal
-                      // if the modal is passing the string 'Approved'/'Rejected'/'Pending'
-                      // However, the modal now passes the boolean 'true'/'false'
-                newStatus === true ? true :
-                newStatus === false ? false :
-                null // For 'Pending'
-            }
+          ? { ...app, status: newStatusApiValue }
           : app
       )
     );
   }, []);
 
-  // --- NEW: Function to trigger applicant list reload from API ---
+  // Fungsi untuk memicu muat ulang daftar pelamar dari API untuk modal detail
   const refreshModalApplicants = useCallback(async () => {
     if (selectedCampaign?.id) {
       await fetchApplicantsForCampaign(selectedCampaign.id);
     }
   }, [selectedCampaign, fetchApplicantsForCampaign]);
-  // --- END NEW ---
 
   if (loading) {
     return (
@@ -485,7 +496,7 @@ export default function CampaignList() {
               <div
                 key={campaign.id}
                 className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col cursor-pointer hover:shadow-xl transition-shadow duration-200"
-                onClick={() => openCampaignDetails(campaign)}
+              // Tidak ada onClick di seluruh kartu untuk memungkinkan klik tombol
               >
                 {campaign.coverProyek && (
                   <div className="w-full h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
@@ -493,7 +504,7 @@ export default function CampaignList() {
                       src={campaign.coverProyek}
                       alt={`Cover Proyek ${campaign.namaProyek}`}
                       className="w-full h-full object-cover"
-                      onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/400x200?text=No+Image'; }}
+                      onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/600x350?text=No+Image'; }}
                     />
                   </div>
                 )}
@@ -514,9 +525,30 @@ export default function CampaignList() {
                     </p>
                   </div>
                   <div className="border-t border-gray-100 pt-4 mt-4">
-                    <div className="flex justify-between items-center text-sm text-gray-500">
+                    <div className="flex justify-between items-center text-sm text-gray-500 mb-3">
                       <span>Dipromosikan: <span className="font-medium text-gray-700">{campaign.tipeProyek}</span></span>
+                      {campaign.isVerification ? (
+                        <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">Terverifikasi</span>
+                      ) : (
+                        <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full">Menunggu Verifikasi</span>
+                      )}
                     </div>
+                    {/* Tombol Aktivasi */}
+                    {!campaign.isVerification ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openActivationModal(campaign); }}
+                        className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors duration-200 shadow-md text-sm"
+                      >
+                        Aktifkan Campaign
+                      </button>
+                    ) : ( // Tampilkan "Lihat Detail" jika sudah terverifikasi
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openCampaignDetails(campaign); }}
+                        className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-md text-sm"
+                      >
+                        Lihat Detail
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -525,17 +557,17 @@ export default function CampaignList() {
         )}
       </div>
 
-      {isModalOpen && selectedCampaign && (
+      {isDetailModalOpen && selectedCampaign && (
         <CampaignDetailModal
           campaign={selectedCampaign}
           initialApplicants={applicantsForModal}
           onClose={closeCampaignDetails}
-          onApplicantStatusChange={(applicantId, newStatusApiValue) => handleApplicantStatusChange(applicantId, newStatusApiValue)}
-          onRefreshApplicants={refreshModalApplicants} 
+          onApplicantStatusChange={handleApplicantStatusChange}
+          onRefreshApplicants={refreshModalApplicants}
         />
       )}
-      {/* Loading state for fetching applicants in modal */}
-      {isModalOpen && loadingApplicants && (
+      {/* State loading untuk mengambil pelamar di modal */}
+      {isDetailModalOpen && loadingApplicants && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
           <div className="bg-white p-8 rounded-lg shadow-xl flex items-center space-x-3">
             <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -546,8 +578,8 @@ export default function CampaignList() {
           </div>
         </div>
       )}
-      {/* Error state for fetching applicants in modal */}
-      {isModalOpen && !loadingApplicants && applicantFetchError && (
+      {/* State error untuk mengambil pelamar di modal */}
+      {isDetailModalOpen && !loadingApplicants && applicantFetchError && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
           <div className="bg-red-50 p-8 rounded-lg shadow-xl text-red-700 border border-red-200">
             <p className="text-lg font-semibold mb-2">Gagal memuat pelamar!</p>
@@ -555,6 +587,15 @@ export default function CampaignList() {
             <button onClick={closeCampaignDetails} className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">Tutup</button>
           </div>
         </div>
+      )}
+
+      {/* Modal Aktivasi */}
+      {isActivationModalOpen && selectedCampaign && (
+        <ActivationModal
+          campaign={selectedCampaign}
+          onClose={closeActivationModal}
+          onActivateCampaign={handleCampaignActivation}
+        />
       )}
     </main>
   );
