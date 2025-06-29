@@ -228,31 +228,28 @@ const CampaignDetailModal = ({ campaign, initialApplicants, onClose, onApplicant
             <div className="flex border-b border-gray-200 mb-6">
               <button
                 onClick={() => setActiveTab('pending')}
-                className={`py-3 px-6 text-lg font-semibold transition-colors duration-200 ${
-                  activeTab === 'pending'
-                    ? 'border-b-4 border-blue-600 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700 border-b-4 border-transparent'
-                }`}
+                className={`py-3 px-6 text-lg font-semibold transition-colors duration-200 ${activeTab === 'pending'
+                  ? 'border-b-4 border-blue-600 text-blue-600'
+                  : 'text-gray-500 hover:text-gray-700 border-b-4 border-transparent'
+                  }`}
               >
                 Need Approval ({modalApplicants.filter(a => mapApplicantStatus(a.status) === 'Pending').length})
               </button>
               <button
                 onClick={() => setActiveTab('approved')}
-                className={`py-3 px-6 text-lg font-semibold transition-colors duration-200 ${
-                  activeTab === 'approved'
-                    ? 'border-b-4 border-blue-600 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700 border-b-4 border-transparent'
-                }`}
+                className={`py-3 px-6 text-lg font-semibold transition-colors duration-200 ${activeTab === 'approved'
+                  ? 'border-b-4 border-blue-600 text-blue-600'
+                  : 'text-gray-500 hover:text-gray-700 border-b-4 border-transparent'
+                  }`}
               >
                 Approved ({modalApplicants.filter(a => mapApplicantStatus(a.status) === 'Approved').length})
               </button>
               <button
                 onClick={() => setActiveTab('rejected')}
-                className={`py-3 px-6 text-lg font-semibold transition-colors duration-200 ${
-                  activeTab === 'rejected'
-                    ? 'border-b-4 border-blue-600 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700 border-b-4 border-transparent'
-                }`}
+                className={`py-3 px-6 text-lg font-semibold transition-colors duration-200 ${activeTab === 'rejected'
+                  ? 'border-b-4 border-blue-600 text-blue-600'
+                  : 'text-gray-500 hover:text-gray-700 border-b-4 border-transparent'
+                  }`}
               >
                 Rejected ({modalApplicants.filter(a => mapApplicantStatus(a.status) === 'Rejected').length})
               </button>
@@ -281,33 +278,42 @@ const CampaignDetailModal = ({ campaign, initialApplicants, onClose, onApplicant
                       <div>
                         <p className="font-bold text-xl text-gray-900">{applicant.name || 'Nama Pelamar'}</p>
                         <p className="text-md text-gray-600 mt-1">{applicant.socialMedia || 'Social Media N/A'}</p>
-                        <p className={`text-sm font-semibold mt-2 px-3 py-1 rounded-full inline-block ${
-                          mapApplicantStatus(applicant.status) === 'Approved' ? 'bg-green-100 text-green-700' :
+                        <p className={`text-sm font-semibold mt-2 px-3 py-1 rounded-full inline-block ${mapApplicantStatus(applicant.status) === 'Approved' ? 'bg-green-100 text-green-700' :
                           mapApplicantStatus(applicant.status) === 'Rejected' ? 'bg-red-100 text-red-700' :
-                          'bg-yellow-100 text-yellow-700'
-                        }`}>
+                            'bg-yellow-100 text-yellow-700'
+                          }`}>
                           Status: {mapApplicantStatus(applicant.status)}
                         </p>
                       </div>
                     </div>
+                    {applicant.inviteBy == "Brand" && (
+                      <div>
+                        <p className={`text-sm font-semibold mt-2 px-3 py-1 rounded-full inline-block ${mapApplicantStatus(applicant.status) === 'Approved' ? 'bg-green-100 text-green-700' :
+                          mapApplicantStatus(applicant.status) === 'Rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
+                          }`}>
+                          Invited by Brand
+                        </p>
+                      </div>
+                    )}
                     {/* Action buttons only for 'Pending' tab */}
-                    {activeTab === 'pending' && (
-                        <div className="flex flex-col gap-3">
-                          <button
-                            onClick={() => handleStatusChange(applicant.id, 'Approved')} // Send true for Approved
-                            className="bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={loadingAction}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleStatusChange(applicant.id, 'Rejected')} // Send false for Rejected
-                            className="bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={loadingAction}
-                          >
-                            Reject
-                          </button>
-                        </div>
+                    {activeTab === 'pending' && applicant.inviteBy != "Brand" && (
+                      <div className="flex flex-col gap-3">
+                        <button
+                          onClick={() => handleStatusChange(applicant.id, 'Approved')} // Send true for Approved
+                          className="bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={loadingAction}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(applicant.id, 'Rejected')} // Send false for Rejected
+                          className="bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-5 py-2 rounded-lg shadow-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={loadingAction}
+                        >
+                          Reject
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -403,6 +409,7 @@ export default function CampaignList() {
           name: app.fullName, // Use actual fullName
           socialMedia: app.email, // Use actual email or relevant social media field
           profilePic: app.image, // Use actual image
+          inviteBy: app.inviteBy, // Include inviteBy field
         }));
         setApplicantsForModal(mappedApplicants);
       } else {
@@ -437,14 +444,14 @@ export default function CampaignList() {
       prevApplicants.map(app =>
         app.id === applicantId
           ? {
-              ...app,
-              status: // This conversion from string to boolean/null should be done in the modal
-                      // if the modal is passing the string 'Approved'/'Rejected'/'Pending'
-                      // However, the modal now passes the boolean 'true'/'false'
-                newStatus === true ? true :
+            ...app,
+            status: // This conversion from string to boolean/null should be done in the modal
+              // if the modal is passing the string 'Approved'/'Rejected'/'Pending'
+              // However, the modal now passes the boolean 'true'/'false'
+              newStatus === true ? true :
                 newStatus === false ? false :
-                null // For 'Pending'
-            }
+                  null // For 'Pending'
+          }
           : app
       )
     );
@@ -493,7 +500,7 @@ export default function CampaignList() {
                       src={campaign.coverProyek}
                       alt={`Cover Proyek ${campaign.namaProyek}`}
                       className="w-full h-full object-cover"
-                      onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/400x200?text=No+Image'; }}
+
                     />
                   </div>
                 )}
@@ -516,7 +523,7 @@ export default function CampaignList() {
                   <div className="border-t border-gray-100 pt-4 mt-4">
                     <div className="flex justify-between items-center text-sm text-gray-500">
                       <span>Dipromosikan: <span className="font-medium text-gray-700">{campaign.tipeProyek}</span></span>
-                      {campaign.status ? (
+                      {campaign.isVerification ? (
                         <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">Terverifikasi</span>
                       ) : (
                         <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full">Menunggu Verifikasi</span>
@@ -536,7 +543,7 @@ export default function CampaignList() {
           initialApplicants={applicantsForModal}
           onClose={closeCampaignDetails}
           onApplicantStatusChange={(applicantId, newStatusApiValue) => handleApplicantStatusChange(applicantId, newStatusApiValue)}
-          onRefreshApplicants={refreshModalApplicants} 
+          onRefreshApplicants={refreshModalApplicants}
         />
       )}
       {/* Loading state for fetching applicants in modal */}

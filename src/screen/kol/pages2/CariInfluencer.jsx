@@ -1,161 +1,16 @@
-import React, { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+// src/pages/KolList.jsx
+import React, { useEffect, useState } from 'react';
+import { getData, postData } from '../../../api/service'; // Make sure the path is correct
 
-// --- Mock Data (Ganti dengan data API Anda) ---
-const initialKolData = {
-  "code": 200,
-  "data": [
-    {
-      "id": "a29886ac-f9fd-4933-974b-596580baa3ef",
-      "email": "hilmanzutech@gmail.com",
-      "fullName": "Gen Halilintar",
-      "image": "https://beres-backend-609517395039.asia-southeast2.run.app/api/v1/file/review/68333845226d836a9b5eb15c",
-      "idRole": "KOL",
-      "category": ["Family Vlogs", "Music"], // Contoh kategori
-      "socialMediaFollowers": { // Ringkasan untuk kartu daftar
-        "tiktok": "15.2M", "instagram": "20.5M", "youtube": "17.8M", "twitter": "1.2M", "facebook": "5.1M", "linkedin": "50K"
-      },
-      "socialMediaProfiles": { // Detail profil untuk modal
-        "tiktok": { handle: "@genhalilintar", url: "https://www.tiktok.com/@genhalilintar" },
-        "instagram": { handle: "@genhalilintar", url: "https://www.instagram.com/genhalilintar" },
-        "youtube": { handle: "GenHalilintar", url: "https://www.youtube.com/user/GenHalilintar" },
-        "twitter": { handle: "@genhalilintar", url: "https://twitter.com/genhalilintar" },
-        "facebook": { handle: "GenHalilintarOfficial", url: "https://www.facebook.com/GenHalilintarOfficial" },
-        "linkedin": { handle: "Gen Halilintar", url: "https://id.linkedin.com/in/gen-halilintar" }
-      },
-      "followerHistory": [ // Mock riwayat 7 hari untuk grafik (dalam ribuan)
-        { date: "Day 1", tiktok: 15100, instagram: 20400, youtube: 17700 },
-        { date: "Day 2", tiktok: 15150, instagram: 20450, youtube: 17750 },
-        { date: "Day 3", tiktok: 15200, instagram: 20500, youtube: 17800 },
-        { date: "Day 4", tiktok: 15250, instagram: 20550, youtube: 17850 },
-        { date: "Day 5", tiktok: 15300, instagram: 20600, youtube: 17900 },
-        { date: "Day 6", tiktok: 15350, instagram: 20650, youtube: 17950 },
-        { date: "Day 7", tiktok: 15400, instagram: 20700, youtube: 18000 }
-      ]
-    },
-    {
-      "id": "b30997bd-g0ge-5044-985c-607691cbb4fg",
-      "email": "sarah.influencer@example.com",
-      "fullName": "Sarah Wijayanto",
-      "image": "https://i.pravatar.cc/150?img=48",
-      "idRole": "KOL",
-      "category": ["Fashion", "Lifestyle", "Beauty"], // Contoh kategori
-      "socialMediaFollowers": {
-        "tiktok": "8.1M", "instagram": "12.3M", "youtube": "5.9M", "twitter": "750K", "facebook": "2.8M", "linkedin": "20K"
-      },
-      "socialMediaProfiles": {
-        "tiktok": { handle: "@sarah.id", url: "https://www.tiktok.com/@sarah.id" },
-        "instagram": { handle: "@sarahwijayanto", url: "https://www.instagram.com/sarahwijayanto" },
-        "youtube": { handle: "SarahWijayanto", url: "https://www.youtube.com/user/SarahWijayanto" },
-        "twitter": { handle: "@sarahwijayanto", url: "https://twitter.com/sarahwijayanto" },
-        "facebook": { handle: "SarahWijayantoOfficial", url: "https://www.facebook.com/sarahwijayanto" },
-        "linkedin": { handle: "Sarah Wijayanto", url: "https://id.linkedin.com/in/sarah-wijayanto" }
-      },
-      "followerHistory": [
-        { date: "Day 1", tiktok: 8000, instagram: 12200, youtube: 5800 },
-        { date: "Day 2", tiktok: 8050, instagram: 12250, youtube: 5850 },
-        { date: "Day 3", tiktok: 8100, instagram: 12300, youtube: 5900 },
-        { date: "Day 4", tiktok: 8150, instagram: 12350, youtube: 5950 },
-        { date: "Day 5", tiktok: 8200, instagram: 12400, youtube: 6000 },
-        { date: "Day 6", tiktok: 8250, instagram: 12450, youtube: 6050 },
-        { date: "Day 7", tiktok: 8300, instagram: 12500, youtube: 6100 }
-      ]
-    },
-    {
-      "id": "c41008ce-h1hf-5155-996d-618702dcc5gh",
-      "email": "david.vlog@example.com",
-      "fullName": "David Gadgetin",
-      "image": "https://i.pravatar.cc/150?img=65",
-      "idRole": "KOL",
-      "category": ["Technology", "Gadgets"], // Contoh kategori
-      "socialMediaFollowers": {
-        "tiktok": "3.5M", "instagram": "4.8M", "youtube": "10.1M", "twitter": "900K", "facebook": "1.5M", "linkedin": "30K"
-      },
-      "socialMediaProfiles": {
-        "tiktok": { handle: "@davidgadgetin", url: "https://www.tiktok.com/@davidgadgetin" },
-        "instagram": { handle: "@davidgadgetin", url: "https://www.instagram.com/davidgadgetin" },
-        "youtube": { handle: "Gadgetin", url: "https://www.youtube.com/user/gadgetin" },
-        "twitter": { handle: "@gadgetin", url: "https://twitter.com/gadgetin" },
-        "facebook": { handle: "GadgetinOfficial", url: "https://www.facebook.com/GadgetinOfficial" },
-        "linkedin": { handle: "David Gadgetin", url: "https://id.linkedin.com/in/david-gadgetin" }
-      },
-      "followerHistory": [
-        { date: "Day 1", tiktok: 3400, instagram: 4700, youtube: 10000 },
-        { date: "Day 2", tiktok: 3450, instagram: 4750, youtube: 10050 },
-        { date: "Day 3", tiktok: 3500, instagram: 4800, youtube: 10100 },
-        { date: "Day 4", tiktok: 3550, instagram: 4850, youtube: 10150 },
-        { date: "Day 5", tiktok: 3600, instagram: 4900, youtube: 10200 },
-        { date: "Day 6", tiktok: 3650, instagram: 4950, youtube: 10250 },
-        { date: "Day 7", tiktok: 3700, instagram: 5000, youtube: 10300 }
-      ]
-    },
-    {
-      "id": "d52119df-i2ig-5266-007e-629813eed6hi",
-      "email": "putri.beauty@example.com",
-      "fullName": "Putri Modifikasi",
-      "image": "https://i.pravatar.cc/150?img=26",
-      "idRole": "KOL",
-      "category": ["Otomotif", "Modifikasi"], // Contoh kategori
-      "socialMediaFollowers": {
-        "tiktok": "1.9M", "instagram": "6.2M", "youtube": "2.7M", "twitter": "300K", "facebook": "800K", "linkedin": "10K"
-      },
-      "socialMediaProfiles": {
-        "tiktok": { handle: "@putrimodifikasi", url: "https://www.tiktok.com/@putrimodifikasi" },
-        "instagram": { handle: "@putrimodifikasi", url: "https://www.instagram.com/putrimodifikasi" },
-        "youtube": { handle: "PutriModifikasi", url: "https://www.youtube.com/user/PutriModifikasi" },
-        "twitter": { handle: "@putrimodif", url: "https://twitter.com/putrimodif" },
-        "facebook": { handle: "PutriModifikasiOfficial", url: "https://www.facebook.com/PutriModifikasiOfficial" },
-        "linkedin": { handle: "Putri Modifikasi", url: "https://id.linkedin.com/in/putri-modifikasi" }
-      },
-      "followerHistory": [
-        { date: "Day 1", tiktok: 1800, instagram: 6100, youtube: 2600 },
-        { date: "Day 2", tiktok: 1850, instagram: 6150, youtube: 2650 },
-        { date: "Day 3", tiktok: 1900, instagram: 6200, youtube: 2700 },
-        { date: "Day 4", tiktok: 1950, instagram: 6250, youtube: 2750 },
-        { date: "Day 5", tiktok: 2000, instagram: 6300, youtube: 2800 },
-        { date: "Day 6", tiktok: 2050, instagram: 6350, youtube: 2850 },
-        { date: "Day 7", tiktok: 2100, instagram: 6400, youtube: 2900 }
-      ]
-    },
-    {
-      "id": "e63220eg-j3jh-5377-118f-630924ffe7ij",
-      "email": "rizal.travel@example.com",
-      "fullName": "Rizal Jalan-Jalan",
-      "image": "https://i.pravatar.cc/150?img=12",
-      "idRole": "KOL",
-      "category": ["Traveling", "Food"], // Contoh kategori
-      "socialMediaFollowers": {
-        "tiktok": "500K", "instagram": "1.8M", "youtube": "1.1M", "twitter": "150K", "facebook": "400K", "linkedin": "5K"
-      },
-      "socialMediaProfiles": {
-        "tiktok": { handle: "@rizaljalanjalan", url: "https://www.tiktok.com/@rizaljalanjalan" },
-        "instagram": { handle: "@rizaljalanjalan", url: "https://www.instagram.com/rizaljalanjalan" },
-        "youtube": { handle: "RizalJalanJalan", url: "https://www.youtube.com/user/RizalJalanJalan" },
-        "twitter": { handle: "@rizaltravel", url: "https://twitter.com/rizaltravel" },
-        "facebook": { handle: "RizalJalanJalanOfficial", url: "https://www.facebook.com/RizalJalanJalanOfficial" },
-        "linkedin": { handle: "Rizal Jalan-Jalan", url: "https://id.linkedin.com/in/rizal-jalan-jalan" }
-      },
-      "followerHistory": [
-        { date: "Day 1", tiktok: 480, instagram: 1700, youtube: 1000 },
-        { date: "Day 2", tiktok: 490, instagram: 1720, youtube: 1020 },
-        { date: "Day 3", tiktok: 500, instagram: 1740, youtube: 1040 },
-        { date: "Day 4", tiktok: 510, instagram: 1760, youtube: 1060 },
-        { date: "Day 5", tiktok: 520, instagram: 1780, youtube: 1080 },
-        { date: "Day 6", tiktok: 530, instagram: 1800, youtube: 1100 },
-        { date: "Day 7", tiktok: 540, instagram: 1820, youtube: 1120 }
-      ]
-    }
-  ],
-  "message": "Data Add Complete"
-};
-
+// --- Mock Data (Digunakan untuk projects karena API user/kol tidak menyediakan ini) ---
+// In a real app, you'd fetch this project data from your API.
 const mockProjectData = {
   "code": 200,
   "data": [
-    { "id": "proj1", "name": "Kampanye Produk Terbaru Q3" },
-    { "id": "proj2", "name": "Promosi Event Grand Opening" },
-    { "id": "proj3", "name": "Launch Aplikasi Mobile V2" },
-    { "id": "proj4", "name": "Campaign Social Media Ramadhan" },
+    { "id": "49dfcce1-9d69-47a1-9fcd-be8ec8339717", "namaProyek": "ABIGOLD IKLAN" },
+    { "id": "2e413457-4a77-4cd5-9df8-a6b74c0ad44d", "namaProyek": "Bear Brand" },
+    { "id": "74376d77-2f2c-43cf-a1ad-a1eb6f5248ea", "namaProyek": "asd" },
+    { "id": "801e5ad7-d247-4093-9049-27af72cda1d9", "namaProyek": "Proyek Test Jual Emas" },
   ],
   "message": "Projects retrieved successfully"
 };
@@ -165,14 +20,26 @@ const KolDetailModal = ({ kol, projects, onClose, onInviteKol }) => {
   const [showInviteSection, setShowInviteSection] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [isInviting, setIsInviting] = useState(false);
+  // State baru untuk tab aktif di rate card
+  const [activeRateTab, setActiveRateTab] = useState('');
 
   if (!kol) return null;
 
+  // Initialize activeRateTab to the first platform if rateCardData exists
+  useEffect(() => {
+    if (kol.rateCardData && kol.rateCardData.rates) {
+      const firstPlatform = Object.keys(kol.rateCardData.rates)[0];
+      if (firstPlatform) {
+        setActiveRateTab(firstPlatform);
+      }
+    }
+  }, [kol.rateCardData]);
+
+  // Sesuaikan platform berdasarkan data yang mungkin ada dari API atau tambahkan secara generik
   const socialMediaPlatforms = [
     { name: 'tiktok', icon: 'fab fa-tiktok', color: 'text-black' },
     { name: 'instagram', icon: 'fab fa-instagram', color: 'text-pink-500' },
     { name: 'youtube', icon: 'fab fa-youtube', color: 'text-red-600' },
-    { name: 'twitter', icon: 'fab fa-twitter', color: 'text-blue-400' },
     { name: 'facebook', icon: 'fab fa-facebook', color: 'text-blue-600' },
     { name: 'linkedin', icon: 'fab fa-linkedin', color: 'text-blue-700' },
   ];
@@ -184,22 +51,27 @@ const KolDetailModal = ({ kol, projects, onClose, onInviteKol }) => {
     }
     setIsInviting(true);
     try {
-      // Simulasi panggilan API untuk mengundang KOL
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulasi penundaan jaringan
-      // Di aplikasi nyata, Anda akan mengirim permintaan ke backend Anda:
-      // const response = await postData('/api/invitations', { kolId: kol.id, projectId: selectedProjectId });
-      onInviteKol(kol.id, selectedProjectId); // Memberi tahu komponen induk
-      alert(`KOL ${kol.fullName} berhasil diundang ke project ${
-        projects.data.find(p => p.id === selectedProjectId)?.name || selectedProjectId
-      }.`);
-      setShowInviteSection(false); // Tutup bagian undangan
-      setSelectedProjectId(''); // Reset pilihan
+      await postData('Campaign/registerByBrand', { IdUser: kol.id, IdCampaign: selectedProjectId });
+      alert(`KOL ${kol.fullName} berhasil diundang ke project ${projects.find(p => p.id === selectedProjectId)?.namaProyek || selectedProjectId // Use namaProyek
+        }.`);
+      setShowInviteSection(false); // Close invitation section
+      setSelectedProjectId(''); // Reset selection
+      onInviteKol(kol.id, selectedProjectId); // Notify parent component
     } catch (error) {
-      console.error('Gagal mengundang KOL:', error);
-      alert('Gagal mengundang KOL. Silakan coba lagi.');
+      console.error('Failed to invite KOL:', error);
+      alert(`Gagal mengundang KOL: ${error.message || error}`); // Display specific error message
     } finally {
       setIsInviting(false);
     }
+  };
+
+  const formatRupiah = (amount) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
   };
 
   return (
@@ -227,7 +99,7 @@ const KolDetailModal = ({ kol, projects, onClose, onInviteKol }) => {
               <h2 className="text-3xl font-extrabold text-gray-900 text-center">{kol.fullName}</h2>
               <p className="text-lg text-gray-600 mt-1">{kol.email}</p>
               <span className="inline-block bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-1 rounded-full mt-3">
-                {kol.idRole}
+                {kol.idRole || 'KOL'} {/* Default ke 'KOL' jika tidak ada */}
               </span>
             </div>
 
@@ -266,6 +138,63 @@ const KolDetailModal = ({ kol, projects, onClose, onInviteKol }) => {
                 ))}
               </div>
 
+              {/* --- Bagian Rate Card Data dengan Tab Bar --- */}
+              {kol.rateCardData && kol.rateCardData.rates && Object.keys(kol.rateCardData.rates).length > 0 && (
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">Rate Card ({kol.rateCardData.currency || 'IDR'})</h3>
+
+                  {/* Tab Bar */}
+                  <div className="flex border-b border-gray-200 mb-4 overflow-x-auto custom-scrollbar-horizontal">
+                    {Object.keys(kol.rateCardData.rates).map(platform => (
+                      <button
+                        key={platform}
+                        onClick={() => setActiveRateTab(platform)}
+                        className={`py-2 px-4 text-center text-sm font-medium focus:outline-none whitespace-nowrap
+                          ${activeRateTab === platform
+                            ? 'border-b-2 border-blue-600 text-blue-600'
+                            : 'text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                          } transition-colors duration-200`
+                        }
+                      >
+                        {platform.charAt(0).toUpperCase() + platform.slice(1)} {/* Capitalize platform name */}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Konten Tab */}
+                  <div className="space-y-4">
+                    {activeRateTab && kol.rateCardData.rates[activeRateTab] ? (
+                      <div className="bg-blue-50 p-4 rounded-lg animate-fade-in">
+                        <h4 className="text-lg font-semibold text-blue-800 mb-2 capitalize">{activeRateTab}</h4>
+                        <ul className="list-disc list-inside text-gray-700">
+                          {Object.entries(kol.rateCardData.rates[activeRateTab]).map(([item, price]) => (
+                            <li key={item} className="flex justify-between items-center text-sm py-1">
+                              <span>{item}:</span>
+                              <span className="font-medium text-gray-900">{formatRupiah(price)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-center p-4 bg-gray-50 rounded-lg">
+                        Tidak ada detail rate card untuk platform ini.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Panel Kanan: Grafik Perkembangan Follower */}
+          <div className="md:w-1/2 flex flex-col pl-6 overflow-hidden">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">Perkembangan Follower (7 Hari Terakhir)</h3>
+            {/* Karena API baru tidak menyediakan followerHistory, tampilkan pesan ini */}
+            <p className="text-gray-600 text-center mt-8 text-lg bg-gray-50 p-6 rounded-lg">
+              Data perkembangan follower tidak tersedia dari API.
+            </p>
+
+            <div className="mt-8 pt-6 border-t border-gray-200">
               {/* Bagian Undangan */}
               <div className="mt-8 pt-6 border-t border-gray-200">
                 <button
@@ -289,8 +218,8 @@ const KolDetailModal = ({ kol, projects, onClose, onInviteKol }) => {
                       required
                     >
                       <option value="">-- Pilih Project --</option>
-                      {projects.data.map(project => (
-                        <option key={project.id} value={project.id}>{project.name}</option>
+                      {projects.map(project => (
+                        <option key={project.id} value={project.id}>{project.namaProyek}</option>
                       ))}
                     </select>
                     <button
@@ -303,47 +232,6 @@ const KolDetailModal = ({ kol, projects, onClose, onInviteKol }) => {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-
-          {/* Panel Kanan: Grafik Perkembangan Follower */}
-          <div className="md:w-1/2 flex flex-col pl-6 overflow-hidden">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">Perkembangan Follower (7 Hari Terakhir)</h3>
-            {kol.followerHistory && kol.followerHistory.length > 0 ? (
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={kol.followerHistory} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} className="text-sm" />
-                  <YAxis tickFormatter={(value) => `${value / 1000}K`} axisLine={false} tickLine={false} className="text-sm" />
-                  <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} formatter={(value) => [`${value / 1000}K`, 'Followers']} />
-                  <Legend verticalAlign="top" height={36} iconType="circle" />
-                  {/* Bar untuk setiap platform media sosial */}
-                  {Object.keys(kol.followerHistory[0] || {}).filter(key => key !== 'date').map(platformKey => (
-                     <Bar
-                       key={platformKey}
-                       dataKey={platformKey}
-                       fill={
-                         platformKey === 'tiktok' ? '#333333' :
-                         platformKey === 'instagram' ? '#E1306C' :
-                         platformKey === 'youtube' ? '#FF0000' :
-                         '#8884d8' // Warna default jika tidak ditentukan
-                       }
-                       name={platformKey.charAt(0).toUpperCase() + platformKey.slice(1)} // Huruf kapital untuk legenda
-                       barSize={15}
-                       radius={[10, 10, 0, 0]}
-                     />
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-gray-600 text-center mt-8 text-lg bg-gray-50 p-6 rounded-lg">
-                Data perkembangan follower tidak tersedia.
-              </p>
-            )}
-
-            <div className="mt-8 pt-6 border-t border-gray-200">
-                <h3 className="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">Lainnya</h3>
-                <p className="text-gray-700">Bagian ini dapat digunakan untuk wawasan atau metrik tambahan yang relevan dengan KOL, seperti tingkat keterlibatan, demografi audiens, atau kinerja kampanye sebelumnya.</p>
             </div>
           </div>
         </div>
@@ -363,6 +251,20 @@ const KolDetailModal = ({ kol, projects, onClose, onInviteKol }) => {
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #a0aec0; /* gray-400 */
+        }
+        .custom-scrollbar-horizontal::-webkit-scrollbar {
+            height: 6px;
+        }
+        .custom-scrollbar-horizontal::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar-horizontal::-webkit-scrollbar-thumb {
+            background: #cbd5e0; /* gray-300 */
+            border-radius: 10px;
+        }
+        .custom-scrollbar-horizontal::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0; /* gray-400 */
         }
 
         /* Animasi fade-in dan scale-in */
@@ -385,13 +287,79 @@ const KolDetailModal = ({ kol, projects, onClose, onInviteKol }) => {
   );
 };
 
-// --- Komponen KolList ---
+// --- Komponen KolList Utama ---
 const KolList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedKol, setSelectedKol] = useState(null);
   const [isKolModalOpen, setIsKolModalOpen] = useState(false);
-  const kolUsers = initialKolData.data; // Akses array 'data' secara langsung
-  const projects = mockProjectData; // Data proyek mock
+
+  // State for KOL data from API
+  const [kolUsers, setKolUsers] = useState([]);
+  // State for campaign data (projects) from API
+  const [campaigns, setCampaigns] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Function to fetch KOL data from API
+  const fetchKols = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getData("user/kol");
+      if (res?.data) {
+        const transformedData = res.data.map(kol => ({
+          id: kol.id,
+          email: kol.email,
+          fullName: kol.fullName,
+          image: kol.image,
+          idRole: kol.idRole,
+          category: kol.categories ? kol.categories.split(',').map(cat => cat.trim()) : [],
+          socialMediaProfiles: {
+            tiktok: kol.tikTok ? { handle: `@${kol.tikTok}`, url: `https://www.tiktok.com/@${kol.tikTok.replace(/^@/, '')}` } : undefined,
+            instagram: kol.instagram ? { handle: `@${kol.instagram}`, url: `https://www.instagram.com/${kol.instagram.replace(/^@/, '')}` } : undefined,
+            youtube: kol.youtube ? { handle: kol.youtube, url: `https://www.youtube.com/@${kol.youtube.replace(/^@/, '')}` } : undefined,
+            facebook: kol.facebook ? { handle: kol.facebook, url: `https://www.facebook.com/${kol.facebook.replace(/^@/, '')}` } : undefined,
+            linkedin: kol.linkedin ? { handle: kol.linkedin, url: `https://www.linkedin.com/in/${kol.linkedin.replace(/^@/, '')}` } : undefined,
+          },
+          followerHistory: [],
+          socialMediaFollowers: {},
+          rateCardData: kol.rateCardData || null,
+        }));
+        setKolUsers(transformedData);
+      } else {
+        setKolUsers([]);
+      }
+    } catch (err) {
+      console.error("Error fetching KOL data:", err);
+      setError("Gagal mengambil data KOL. Silakan coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to fetch campaign data for the project selection
+  const fetchCampaigns = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getData("Campaign");
+      // Filter campaigns where isVerification is true
+      const verifiedCampaigns = res.data.filter(camp => camp.isVerification === true);
+      setCampaigns(verifiedCampaigns);
+    } catch (err) {
+      console.error("Error fetching campaign data:", err);
+      setError("Gagal mengambil data kampanye. Silakan coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Call fetchKols and fetchCampaigns when the component mounts
+  useEffect(() => {
+    fetchKols();
+    fetchCampaigns(); // Fetch campaigns here
+  }, []);
 
   const filteredKols = kolUsers.filter(kol =>
     kol.fullName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -408,32 +376,8 @@ const KolList = () => {
   };
 
   const handleInviteKol = (kolId, projectId) => {
-    // Fungsi ini dapat digunakan untuk memperbarui state apa pun di KolList jika diperlukan
     console.log(`KOL ${kolId} diundang ke project ${projectId} (dari induk)`);
-    // Dalam aplikasi nyata, Anda mungkin akan mengambil ulang daftar KOL atau memperbarui state lokal jika status undangan perlu direfleksikan
-  };
-
-  // Fungsi pembantu untuk merender ikon media sosial dan jumlah follower untuk kartu (tampilan ringkasan)
-  const renderSocialMediaFollowersSummary = (followers) => {
-    const platforms = [
-      { name: 'tiktok', icon: 'fab fa-tiktok', color: 'text-black' },
-      { name: 'instagram', icon: 'fab fa-instagram', color: 'text-pink-500' },
-      { name: 'youtube', icon: 'fab fa-youtube', color: 'text-red-600' },
-      { name: 'twitter', icon: 'fab fa-twitter', color: 'text-blue-400' },
-      { name: 'facebook', icon: 'fab fa-facebook', color: 'text-blue-600' },
-      { name: 'linkedin', icon: 'fab fa-linkedin', color: 'text-blue-700' },
-    ];
-
-    return (
-      <div className="grid grid-cols-2 gap-y-1 gap-x-2 text-sm">
-        {platforms.map(platform => followers[platform.name] && (
-          <div key={platform.name} className="flex items-center gap-1.5">
-            <i className={`${platform.icon} ${platform.color} text-base`}></i>
-            <span className="text-gray-700 font-medium text-xs">{followers[platform.name]}</span>
-          </div>
-        ))}
-      </div>
-    );
+    // You might want to refresh KOL data or show a notification here
   };
 
   return (
@@ -455,54 +399,67 @@ const KolList = () => {
         </div>
       </div>
 
-      {/* Kartu KOL */}
-      {filteredKols.length === 0 ? (
+      {/* Status Loading, Error, atau No Data */}
+      {loading ? (
+        <div className="text-center text-gray-600 text-xl py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-blue-500 border-r-blue-300 mx-auto mb-4"></div>
+          Memuat data KOL...
+        </div>
+      ) : error ? (
+        <p className="text-center text-red-600 text-xl py-10 bg-red-50 border border-red-200 rounded-lg shadow-md">
+          {error}
+        </p>
+      ) : filteredKols.length === 0 ? (
         <p className="text-center text-gray-600 text-xl py-10 bg-white rounded-lg shadow-md">
-          Tidak ada KOL dengan nama "{searchTerm}".
+          {searchTerm ? `Tidak ada KOL dengan nama "${searchTerm}".` : 'Tidak ada data KOL yang tersedia.'}
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"> {/* Jarak disesuaikan agar terasa sedikit lebih kecil */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredKols.map(kol => (
             <div
               key={kol.id}
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1 relative group flex flex-col cursor-pointer"
-              onClick={() => openKolDetails(kol)} // Klik kartu membuka modal detail
+              onClick={() => openKolDetails(kol)}
             >
-              <div className="w-full h-40 bg-gray-200 overflow-hidden flex items-center justify-center"> {/* Tinggi gambar sedikit lebih kecil */}
+              <div className="w-full h-40 bg-gray-200 overflow-hidden flex items-center justify-center">
                 <img
                   src={kol.image || `https://ui-avatars.com/api/?name=${kol.fullName.split(' ').join('+')}&background=random&color=fff&size=200`}
                   alt={kol.fullName}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                   onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${kol.fullName.split(' ').join('+')}&background=random&color=fff&size=200`; }}
                 />
-                {/* Overlay untuk efek hover */}
                 <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
               </div>
-              <div className="p-5 text-center flex-grow flex flex-col justify-between"> {/* Padding disesuaikan */}
+              <div className="p-5 text-center flex-grow flex flex-col justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-1 truncate"> {/* Judul lebih kecil */}
+                  <h2 className="text-xl font-bold text-gray-900 mb-1 truncate">
                     {kol.fullName}
                   </h2>
-                  <p className="text-sm text-gray-600 mb-3 font-medium"> {/* Teks email lebih kecil */}
+                  <p className="text-sm text-gray-600 mb-3 font-medium">
                     {kol.email}
                   </p>
-                  <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-0.5 rounded-full mb-4"> {/* Badge peran lebih kecil */}
-                    {kol.idRole}
+                  <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-0.5 rounded-full mb-4">
+                    {kol.idRole || 'KOL'}
                   </span>
                 </div>
-                
-                {/* Bagian Follower Media Sosial (Ringkasan) */}
-                {kol.socialMediaFollowers && (
-                  <div className="mt-3 pt-3 border-t border-gray-200"> {/* Margin/padding disesuaikan */}
-                    <h3 className="text-base font-semibold text-gray-800 mb-2">Follower:</h3> {/* Judul lebih kecil */}
-                    {renderSocialMediaFollowersSummary(kol.socialMediaFollowers)}
+
+                {/* Bagian Kategori pada Kartu */}
+                {kol.category && kol.category.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <h3 className="text-base font-semibold text-gray-800 mb-2">Kategori:</h3>
+                    <div className="flex flex-wrap justify-center gap-1">
+                      {kol.category.map((cat, index) => (
+                        <span key={index} className="bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full">
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                {/* Tombol "Lihat Detail" memicu pembukaan modal */}
                 <button
-                  className="mt-5 w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-md hover:shadow-lg text-sm" // Tombol lebih kecil
-                  onClick={(e) => { e.stopPropagation(); openKolDetails(kol); }} // Hentikan propagasi untuk mencegah klik kartu terpicu dua kali
+                  className="mt-5 w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-md hover:shadow-lg text-sm"
+                  onClick={(e) => { e.stopPropagation(); openKolDetails(kol); }}
                 >
                   Lihat Detail
                 </button>
@@ -516,7 +473,7 @@ const KolList = () => {
       {isKolModalOpen && (
         <KolDetailModal
           kol={selectedKol}
-          projects={projects} // Kirim data proyek mock
+          projects={campaigns}
           onClose={closeKolDetails}
           onInviteKol={handleInviteKol}
         />
