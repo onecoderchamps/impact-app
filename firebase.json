@@ -9,12 +9,12 @@
     ],
     "rewrites": [
       {
-        "source": "**",
-        "destination": "/index.html"
-      },
-      {
         "source": "/base.txt/",
         "destination": "/base.txt"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
       }
     ]
   }

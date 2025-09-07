@@ -5,15 +5,19 @@ import SyncStatusModal from "./ratecard/SyncStatusModal";
 import { getData, postData } from "../../../api/service";
 import { Pencil } from 'lucide-react'; // Icon edit
 import RateCardEditor from "./ratecard/RateCardModal";
+import { useLocation } from "react-router-dom";
 
 const initialItems = [
   { id: "top", title: "Top Performing Content" },
 ];
 
 export default function RateCardPage() {
+  const location = useLocation();
   const [items, setItems] = useState(initialItems);
   const [modal, setModal] = useState(null);
   const [user, setUser] = useState(null);
+  const [verify, setVerify] = useState(null);
+
   const [data, setData] = useState([]);
   const [syncStatus, setSyncStatus] = useState("");
   const [syncDone, setSyncDone] = useState(false);
@@ -48,26 +52,51 @@ export default function RateCardPage() {
   };
 
   // const handleSyncTikTok = () => syncAccount("TikTok", "Scraper/scraperTiktok", "tikTok");
-  const handleTikTokLogin = () => {
-    const TIKTOK_CLIENT_KEY = 'awgarpn9l04je0io';
-    const REDIRECT_URI = 'https://your-backend-api.com/api/auth/tiktok/callback';
-    const scope = "user.info.basic,video.list,video.display.list"; // Scope yang diminta
-    const state = Math.random().toString(36).substring(2, 15); // State token untuk keamanan
+  async function generateCodeChallenge(codeVerifier) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(codeVerifier);
+    const digest = await window.crypto.subtle.digest("SHA-256", data);
+    const base64Digest = btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+    return base64Digest;
+  }
 
+  function generateCodeVerifier() {
+    const array = new Uint32Array(56); // panjang 43–128
+    window.crypto.getRandomValues(array);
+    return Array.from(array, dec => ("0" + dec.toString(16)).substr(-2)).join("");
+  }
+
+  const handleTikTokLogin = async () => {
+    const TIKTOK_CLIENT_KEY = "sbawgaidkbothlgvz9";
+    const REDIRECT_URI = "https://impact.id/appimpact/rate-card";
+    const scope = "user.info.basic";
+    const state = Math.random().toString(36).substring(2, 15);
+
+    // 1. generate PKCE
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+    // 2. simpan ke localStorage supaya dipakai saat exchange token
+    localStorage.setItem("tiktok_auth_state", state);
+    localStorage.setItem("tiktok_code_verifier", codeVerifier);
+
+    // 3. bikin URL auth
     const authUrl = `https://www.tiktok.com/v2/auth/authorize/` +
       `?client_key=${TIKTOK_CLIENT_KEY}` +
       `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
       `&scope=${encodeURIComponent(scope)}` +
       `&response_type=code` +
-      `&state=${state}`;
+      `&state=${state}` +
+      `&code_challenge=${codeChallenge}` +
+      `&code_challenge_method=S256`;
 
-    // Simpan state di localStorage atau session storage untuk verifikasi nanti
-    localStorage.setItem('tiktok_auth_state', state);
-    console.log(state);
-
-    // Alihkan pengguna ke URL otorisasi TikTok
+    // 4. redirect ke TikTok
     window.location.href = authUrl;
   };
+
   const handleSyncYouTube = () => syncAccount("YouTube", "Scraper/scraperYoutube", "youtube");
   const handleSyncInstagram = () => syncAccount("Instagram", "Scraper/scraperInstagram", "instagram");
   // const handleSyncFacebook = () => {
@@ -87,8 +116,39 @@ export default function RateCardPage() {
         console.error("Failed to fetch user data", error);
       }
     };
+    const fetchUser = async () => {
+      const response = await getData("auth/verifySessions");
+      setVerify(response.data);
+      if(response.data.tikTokAccessToken === null){
+        const params = new URLSearchParams(location.search);
+        const code = params.get("code");
+        const state = params.get("state");
+        
+        if (code) {
+          console.log("TikTok Auth Code:", code);
+          console.log("TikTok State:", state);
+          
+          // 2. ambil code_verifier dari localStorage
+          const codeVerifier = localStorage.getItem("tiktok_code_verifier");
+          
+          // 3. kirim ke backend untuk exchange token
+          postData("auth/tiktok/exchange", {
+            code,
+            codeVerifier,
+            redirectUri: "https://impact.id/appimpact/rate-card",
+          })
+          .then((res) => {
+            console.log("Access Token Response:", res);
+          })
+          .catch((err) => {
+            console.error("Token exchange failed:", err);
+          });
+        }
+      }
+    }
+    fetchUser();
     fetchUserData();
-  }, []);
+  }, [location.search]);
 
   const handleSave = (data) => {
     console.log("Saved data:", data);
@@ -193,7 +253,7 @@ export default function RateCardPage() {
       )}
 
       <div className="flex space-x-4 mt-2">
-        <button
+        {/* <button
           className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
           onClick={handleSyncYouTube}
         >
@@ -204,7 +264,7 @@ export default function RateCardPage() {
           onClick={handleSyncInstagram}
         >
           Sync Instagram
-        </button>
+        </button> */}
         {/* <button
           className="px-4 py-2 text-sm font-medium text-white bg-black rounded-md hover:bg-gray-800"
           onClick={handleSyncTikTok}
@@ -217,7 +277,7 @@ export default function RateCardPage() {
             className="px-4 py-2 text-sm font-medium text-white bg-black rounded-md hover:bg-gray-800"
             onClick={handleTikTokLogin} // Ini adalah tombol sync manual
           >
-            Login with TikTok
+            Connect To TikTok
           </button>
         </div>
         {/* <button
@@ -226,12 +286,12 @@ export default function RateCardPage() {
         >
           Sync Facebook
         </button> */}
-        <button
+        {/* <button
           className="px-4 py-2 text-sm font-medium text-white bg-[#0077B5] rounded-md hover:bg-[#006699]"
           onClick={handleSyncLinkedIn}
         >
           Sync LinkedIn
-        </button>
+        </button> */}
       </div>
 
       <h2 className="text-xl font-bold mb-4">Your Social Media Performance</h2>
