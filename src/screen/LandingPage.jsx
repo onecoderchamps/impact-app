@@ -225,9 +225,9 @@ const LandingPage = () => {
               Impact.<span className="text-purple-400">id</span>
             </a>
             <div className="flex space-x-6">
-              <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">Kebijakan Privasi</a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">Syarat & Ketentuan</a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">Hubungi Kami</a>
+              <a href="/privacy" className="text-gray-400 hover:text-white transition-colors duration-200">Kebijakan Privasi</a>
+              <a href="/term" className="text-gray-400 hover:text-white transition-colors duration-200">Syarat & Ketentuan</a>
+              {/* <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">Hubungi Kami</a> */}
             </div>
           </div>
           <p className="text-gray-500 text-sm mt-4">&copy; {new Date().getFullYear()} Impact.id. Semua Hak Dilindungi.</p>

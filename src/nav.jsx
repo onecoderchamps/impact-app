@@ -19,6 +19,9 @@ import CreateCampaign from "./screen/kol/pages2/CreateCampaign";
 import DaftarCampaign from "./screen/kol/pages2/DaftarCampaign";
 import PermintaanEndorse from "./screen/kol/pages2/PermintaanEndorse";
 import PencarianInfluencer from "./screen/kol/pages2/CariInfluencer";
+import PrivacyPolicy from "./screen/KebijakanPrivasi";
+import TermsAndConditions from "./screen/Termandcondition";
+
 
 
 function App() {
@@ -26,6 +29,9 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/privacy" element={<PrivacyPolicy/>}/>
+        <Route path="/term" element={<TermsAndConditions/>}/>
+
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/Verify" element={<OTPVerification />} />
