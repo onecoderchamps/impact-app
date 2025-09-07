@@ -119,30 +119,29 @@ export default function RateCardPage() {
     const fetchUser = async () => {
       const response = await getData("auth/verifySessions");
       setVerify(response.data);
-      if(response.data.tikTokAccessToken === null){
+      if (response.data.tikTokAccessToken === null) {
         const params = new URLSearchParams(location.search);
         const code = params.get("code");
         const state = params.get("state");
-        
+
         if (code) {
           console.log("TikTok Auth Code:", code);
           console.log("TikTok State:", state);
-          
           // 2. ambil code_verifier dari localStorage
           const codeVerifier = localStorage.getItem("tiktok_code_verifier");
-          
+
           // 3. kirim ke backend untuk exchange token
           postData("auth/tiktok/exchange", {
             code,
             codeVerifier,
             redirectUri: "https://impact.id/appimpact/rate-card",
           })
-          .then((res) => {
-            console.log("Access Token Response:", res);
-          })
-          .catch((err) => {
-            console.error("Token exchange failed:", err);
-          });
+            .then((res) => {
+              window.location.href = "/appimpact/rate-card"; // bersihkan URL
+            })
+            .catch((err) => {
+              console.error("Token exchange failed:", err);
+            });
         }
       }
     }
@@ -271,15 +270,17 @@ export default function RateCardPage() {
         >
           Sync TikTok
         </button> */}
-        <div className="flex space-x-4 mt-2">
-          {/* ... tombol-tombol lainnya */}
-          <button
-            className="px-4 py-2 text-sm font-medium text-white bg-black rounded-md hover:bg-gray-800"
-            onClick={handleTikTokLogin} // Ini adalah tombol sync manual
-          >
-            Connect To TikTok
-          </button>
-        </div>
+        {verify && verify.tikTokAccessToken === null &&
+          <div className="flex space-x-4 mt-2">
+            {/* ... tombol-tombol lainnya */}
+            <button
+              className="px-4 py-2 text-sm font-medium text-white bg-black rounded-md hover:bg-gray-800"
+              onClick={handleTikTokLogin} // Ini adalah tombol sync manual
+            >
+              Connect To TikTok
+            </button>
+          </div>
+        }
         {/* <button
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
           onClick={handleSyncFacebook}
