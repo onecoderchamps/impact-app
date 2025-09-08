@@ -41,7 +41,7 @@ export default function RateCardPage() {
     setSyncDone(false);
 
     try {
-      await postData(endpoint, { username });
+      await getData(endpoint);
       setSyncStatus(`✅ ${platform} synced successfully.`);
     } catch (err) {
       setSyncStatus(`❌ Failed to sync ${platform}. Please try again.`);
@@ -51,7 +51,7 @@ export default function RateCardPage() {
     }
   };
 
-  // const handleSyncTikTok = () => syncAccount("TikTok", "Scraper/scraperTiktok", "tikTok");
+
   async function generateCodeChallenge(codeVerifier) {
     const encoder = new TextEncoder();
     const data = encoder.encode(codeVerifier);
@@ -72,7 +72,7 @@ export default function RateCardPage() {
   const handleTikTokLogin = async () => {
     const TIKTOK_CLIENT_KEY = "sbawgaidkbothlgvz9";
     const REDIRECT_URI = "https://impact.id/appimpact/rate-card";
-    const scope = "user.info.basic";
+    const scope = "user.info.basic,video.list,user.info.profile,user.info.stats";
     const state = Math.random().toString(36).substring(2, 15);
 
     // 1. generate PKCE
@@ -99,6 +99,7 @@ export default function RateCardPage() {
 
   const handleSyncYouTube = () => syncAccount("YouTube", "Scraper/scraperYoutube", "youtube");
   const handleSyncInstagram = () => syncAccount("Instagram", "Scraper/scraperInstagram", "instagram");
+  const handleSyncTikTok = () => syncAccount("TikTok", "Scraper/scraperTiktok", "tikTok");
   // const handleSyncFacebook = () => {
   //   syncAccount("Facebook", "Scraper/scraperFacebook", "facebook");
   // };
@@ -264,12 +265,14 @@ export default function RateCardPage() {
         >
           Sync Instagram
         </button> */}
-        {/* <button
-          className="px-4 py-2 text-sm font-medium text-white bg-black rounded-md hover:bg-gray-800"
-          onClick={handleSyncTikTok}
-        >
-          Sync TikTok
-        </button> */}
+        {verify && verify.tikTokAccessToken !== null &&
+          <button
+            className="px-4 py-2 text-sm font-medium text-white bg-black rounded-md hover:bg-gray-800"
+            onClick={handleSyncTikTok}
+          >
+            Sync TikTok
+          </button>
+        }
         {verify && verify.tikTokAccessToken === null &&
           <div className="flex space-x-4 mt-2">
             {/* ... tombol-tombol lainnya */}
