@@ -49,12 +49,11 @@ const ActivationModal = ({ campaign, onClose, onActivateCampaign }) => {
     setError(null);
     try {
       // Endpoint API untuk memverifikasi/mengaktifkan campaign
-      const response = await putData(`Campaign/verifCampaign`, { idCampaign: campaign.id });
+      const response = await postData(`Campaign/payCampaign`, { idCampaign: campaign.id,hargaPekerjaan: campaign.hargaPekerjaan });
 
       if (response.code === 200) {
         alert('Campaign berhasil diaktifkan!');
-        onActivateCampaign(campaign.id); // Beri tahu parent untuk memperbarui daftar
-        onClose();
+        window.location.href = response.response.paymentUrl;
       } else {
         setError(response.Error || 'Gagal mengaktifkan campaign.');
       }
