@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { getData, putData } from '../../../api/service'; // Pastikan putData diimpor
+import { getData, postData, putData } from '../../../api/service'; // Pastikan putData diimpor
 import { format } from 'date-fns'; // Untuk format tanggal
 import { id } from 'date-fns/locale'; // Untuk format tanggal Indonesia
 
@@ -44,23 +44,50 @@ const ContractSignModal = ({ contract, onClose, onSignSuccess }) => {
     setLoading(true);
     setError(null);
     try {
-      // Endpoint API untuk tanda tangan kontrak. Asumsi API memerlukan id kontrak
-      // dan mengupdate statusnya. Sesuaikan payload dan endpoint jika berbeda.
       const payload = {
-        id: contract._id, // Menggunakan _id dari objek kontrak
-        isVerification: true, // Asumsi ini yang menandai kontrak sudah ditandatangani/diverifikasi
-        // Anda mungkin perlu mengirim IdUser juga jika API membutuhkannya
-        IdUser: contract.IdUser // Kirim IdUser yang ada di kontrak
+        id: contract.kontrak.id,
+        isVerification: true,
+        IdUser: contract.IdUser
       };
 
-      const response = await putData("Campaign/Kontrak", payload); // Menggunakan putData untuk update
+      const response = await postData("Campaign/approveContract/" + contract.kontrak.id); // Menggunakan putData untuk update
 
       if (response.code === 200) {
         alert('Kontrak berhasil ditandatangani!');
         onSignSuccess(contract._id, true); // Memberi tahu parent bahwa tanda tangan berhasil
         onClose();
+        window.location.reload();
       } else {
         setError(response.Error || 'Gagal menandatangani kontrak.');
+      }
+    } catch (err) {
+      console.error('Error signing contract:', err);
+      setError('Terjadi kesalahan saat menandatangani kontrak. Silakan coba lagi.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignCancelContract = async () => {
+
+    setLoading(true);
+    setError(null);
+    try {
+      const payload = {
+        id: contract.kontrak.id,
+        isVerification: true,
+        IdUser: contract.IdUser
+      };
+
+      const response = await postData("Campaign/declineContract/" + contract.kontrak.id); // Menggunakan putData untuk update
+
+      if (response.code === 200) {
+        alert('Kontrak berhasil ditolak!');
+        onSignSuccess(contract._id, true); // Memberi tahu parent bahwa tanda tangan berhasil
+        onClose();
+        window.location.reload();
+      } else {
+        setError(response.Error || 'Gagal menolak kontrak.');
       }
     } catch (err) {
       console.error('Error signing contract:', err);
@@ -91,17 +118,17 @@ const ContractSignModal = ({ contract, onClose, onSignSuccess }) => {
                 Idealnya, konten kontrak diambil dari API atau dinamis berdasarkan `contract.IdCampaign` atau `contract._id`. */}
             <h3 className="text-xl font-bold mb-3">Perjanjian Kerjasama Influencer</h3>
             <p className="mb-2">Yang bertanda tangan di bawah ini:</p>
-            <p className="ml-4 mb-2">Nama Brand: [Nama Brand]</p>
-            <p className="ml-4 mb-2">Nama Influencer: {contract.IdUser || 'N/A'}</p> {/* Contoh: tampilkan ID user */}
-            <p className="mb-4">Terkait dengan kampanye: {contract.IdCampaign || 'N/A'}</p> {/* Contoh: tampilkan ID campaign */}
+            <p className="ml-4 mb-2">Nama Brand: {contract.brand.fullName}</p>
+            <p className="ml-4 mb-2">Nama Influencer: {contract.influencer.fullName || 'N/A'}</p> {/* Contoh: tampilkan ID user */}
+            <p className="mb-4">Terkait dengan kampanye: {contract.detail.namaProyek || 'N/A'}</p> {/* Contoh: tampilkan ID campaign */}
 
             <p className="mb-4">Dengan ini menyatakan persetujuan terhadap ketentuan-ketentuan berikut:</p>
 
             <ol className="list-decimal list-inside space-y-2 mb-6">
-              <li>Pihak Influencer akan mempromosikan produk/layanan sesuai arahan yang diberikan dalam kampanye `{contract.IdCampaign}`.</li>
+              <li>Pihak Influencer akan mempromosikan produk/layanan sesuai arahan yang diberikan dalam kampanye `{contract.detail.namaProyek}`.</li>
               <li>Konten yang dibuat harus sesuai dengan pedoman yang telah disepakati dan mencerminkan nilai-nilai brand.</li>
               {/* Di sini, kita asumsikan contract memiliki properti 'harga' atau 'amount' yang relevan */}
-              <li>Pembayaran akan dilakukan sebesar {formatCurrency(contract.HargaPekerjaan || 0)} setelah pekerjaan diselesaikan dan diverifikasi. (Sesuaikan ini dengan data harga campaign)</li>
+              <li>Pembayaran akan dilakukan sebesar {formatCurrency(contract.detail.hargaPekerjaan || 0)} setelah pekerjaan diselesaikan dan diverifikasi. (Sesuaikan ini dengan data harga campaign)</li>
               <li>Perjanjian ini berlaku sejak tanggal penandatanganan hingga berakhirnya periode kampanye pada `{formatDate(new Date())}`.</li> {/* Contoh tanggal saat ini */}
               <li>Kedua belah pihak setuju untuk menyelesaikan setiap perselisihan secara musyawarah mufakat.</li>
             </ol>
@@ -143,6 +170,19 @@ const ContractSignModal = ({ contract, onClose, onSignSuccess }) => {
               </svg>
             ) : null}
             Setuju dan Tanda Tangan Kontrak
+          </button>
+          <br/>
+          <button
+            onClick={handleSignCancelContract}
+            className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-md text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          >
+            {loading ? (
+              <svg className="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : null}
+            Tolak Kontrak
           </button>
         </div>
       </div>
@@ -219,6 +259,7 @@ export default function ContractList() {
     );
   }
 
+  console.log(contracts)
   return (
     <main className="ml-64 mt-20 p-8 bg-gray-100 min-h-screen">
       <div className="max-w-full mx-auto">
@@ -228,45 +269,42 @@ export default function ContractList() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {contracts.map((contract) => (
               <div
-                key={contract._id}
+                key={contract.kontrak.id}
                 className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col hover:shadow-xl transition-shadow duration-200"
               >
                 <div className="p-6 flex-grow flex flex-col justify-between">
                   <div>
                     {/* Menggunakan _id untuk menampilkan ID Kontrak */}
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Kontrak ID: {contract.id.substring(0, 8)}...</h3>
+                    <h3 className="text-sm font-bold text-gray-900 mb-2">Kontrak ID: {contract.kontrak.id.substring(0, )}...</h3>
                     <p className="text-sm text-gray-600 mb-1">
-                      <span className="font-semibold">ID User:</span> {contract.IdUser || 'N/A'}
-                    </p>
-                    <p className="text-sm text-gray-600 mb-3">
-                      <span className="font-semibold">ID Campaign:</span> {contract.IdCampaign || 'N/A'}
+                      <span className="font-semibold">Nama Campaign:</span> {contract.detail.namaProyek || 'N/A'}
                     </p>
                     <p className="text-sm text-gray-700 mb-1">
-                      <span className="font-medium">Dibuat:</span> {formatDate(contract.CreatedAt)}
+                      <span className="font-medium">Dibuat:</span> {formatDate(contract.detail.createdAt)}
                     </p>
-                    <p className="text-sm text-gray-700 mb-4">
-                      <span className="font-medium">Terakhir Diperbarui:</span> {contract.UpdatedAt ? formatDate(contract.UpdatedAt) : 'Belum pernah'}
-                    </p>
+                    {/* <p className="text-sm text-gray-700 mb-4">
+                      <span className="font-medium">Terakhir Diperbarui:</span> {contract.kontrak.UpdatedAt ? formatDate(contract.kontrak.UpdatedAt) : 'Belum pernah'}
+                    </p> */}
                   </div>
                   <div className="border-t border-gray-100 pt-4 mt-4">
                     <div className="flex justify-between items-center text-sm text-gray-500 mb-3">
-                      <span>Status Aktif: <span className={`font-medium ${contract.IsActive ? 'text-green-600' : 'text-red-600'}`}>{contract.IsActive ? 'Aktif' : 'Tidak Aktif'}</span></span>
-                      <span>Dibuat Oleh: <span className="font-medium text-gray-700">{contract.InviteBy || 'N/A'}</span></span>
+                      <span>Status Aktif: <span className={`font-medium ${contract.kontrak.isActive ? 'text-green-600' : 'text-red-600'}`}>{contract.kontrak.isActive ? 'Aktif' : 'Tidak Aktif'}</span></span>
+                      <span>Dibuat Oleh: <span className="font-medium text-gray-700">{contract.brand.fullName || 'N/A'}</span></span>
                     </div>
                     <div className="flex justify-between items-center text-sm text-gray-500 mb-4">
-                      <span>Verifikasi:
-                        {contract.IsVerification === true ? (
+                      {/* <span>Verifikasi:
+                        {contract.kontrak.IsVerification === true ? (
                           <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full ml-2">Terverifikasi</span>
                         ) : contract.IsVerification === false ? (
                           <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full ml-2">Ditolak</span>
                         ) : (
                           <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full ml-2">Menunggu</span>
                         )}
-                      </span>
+                      </span> */}
                       <span>Status Kontrak:
-                        {contract.Status === true ? (
+                        {contract.kontrak.isVerification === true ? (
                           <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full ml-2">Disetujui</span>
-                        ) : contract.Status === false ? (
+                        ) : contract.kontrak.isVerification === false ? (
                           <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full ml-2">Ditolak</span>
                         ) : (
                           <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full ml-2">Pending</span>
@@ -275,19 +313,16 @@ export default function ContractList() {
                     </div>
 
                     {/* Tombol Tanda Tangan Kontrak */}
-                    {contract.IsVerification !== true ? ( // Tampilkan jika belum diverifikasi
+                    {contract.kontrak.isVerification === true ? (
+                      null
+                    ) : contract.kontrak.isVerification === false ? (
+                      null
+                    ) : (
                       <button
                         onClick={() => openSignModal(contract)}
                         className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-md text-sm"
                       >
                         Tanda Tangan Kontrak
-                      </button>
-                    ) : (
-                      <button
-                        className="w-full bg-gray-300 text-gray-700 py-2 rounded-lg font-semibold cursor-not-allowed text-sm"
-                        disabled
-                      >
-                        Kontrak Sudah Ditandatangani
                       </button>
                     )}
                   </div>
